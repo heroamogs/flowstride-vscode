@@ -3,3 +3,10 @@ node_modules/
 node_modules/**
 ../node_modules/**
 ../../node_modules/**
+# Release checks
+development-audit.json
+runtime-audit.json
+*.tsbuildinfo
+out/
+*.vsix
+.vscode-test/

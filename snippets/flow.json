@@ -8,5 +8,19 @@
     "prefix": "Sce",
     "body": "Scenario: ${1:Description}\n  Given \"${2:Initial condition}\"",
     "description": "Create a new Scenario block"
+  },
+  "Native game alias": {
+    "prefix": "gameAlias",
+    "body": [
+      "let game = \"flowstride:game\";"
+    ],
+    "description": "Use native Flowstride game actions"
+  },
+  "Native game assertion": {
+    "prefix": "gameState",
+    "body": [
+      "game.expectState {\"path\":\"${1:score}\",\"equals\":${2:1}};"
+    ],
+    "description": "Assert application-registered game state"
   }
 }
