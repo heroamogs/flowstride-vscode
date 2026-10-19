@@ -2,8 +2,9 @@
   "name": "flowstride-vscode",
   "displayName": "Flowstride Automation",
   "description": "Official VS Code extension for Flowstride. Includes syntax highlighting, error diagnostics, IntelliSense, and interactive test runner.",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "publisher": "flowstride",
+  "icon": "images/logo.png",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -71,16 +72,35 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "Flowstride",
+      "properties": {
+        "flowstride.nodePath": {
+          "type": "string",
+          "default": "node",
+          "description": "Node.js executable used to run the locally installed Flowstride CLI."
+        }
+      }
     }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test tests/*.test.cjs"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.80.0",
     "typescript": "^5.0.0"
-  }
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    }
+  },
+  "extensionKind": [
+    "workspace"
+  ]
 }
