@@ -10,3 +10,10 @@ vsc-extension-quickstart.md
 node_modules/**
 ../node_modules/**
 ../../node_modules/**
+tests/**
+scripts/**
+.github/**
+**/.DS_Store
+package-lock.json
+
+.engine-os/**

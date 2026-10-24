@@ -19,8 +19,369 @@
   "Native game assertion": {
     "prefix": "gameState",
     "body": [
-      "game.expectState {\"path\":\"${1:score}\",\"equals\":${2:1}};"
+      "game.expectState {",
+      "  \"path\": \"${1:score}\",",
+      "  \"equals\": ${2:1}",
+      "};"
     ],
     "description": "Assert application-registered game state"
+  },
+  "Native browser.create": {
+    "prefix": "flow.browser.create",
+    "body": [
+      "flow.browser.create {",
+      "  \"name\": \"customer\"",
+      "};"
+    ],
+    "description": "Native Flowstride browser.create (adapt the fixture values to your application)"
+  },
+  "Native browser.use": {
+    "prefix": "flow.browser.use",
+    "body": [
+      "flow.browser.use {",
+      "  \"name\": \"customer\"",
+      "};"
+    ],
+    "description": "Native Flowstride browser.use (adapt the fixture values to your application)"
+  },
+  "Native browser.close": {
+    "prefix": "flow.browser.close",
+    "body": [
+      "flow.browser.close {",
+      "  \"name\": \"customer\"",
+      "};"
+    ],
+    "description": "Native Flowstride browser.close (adapt the fixture values to your application)"
+  },
+  "Native browser.list": {
+    "prefix": "flow.browser.list",
+    "body": [
+      "flow.browser.list {};"
+    ],
+    "description": "Native Flowstride browser.list (adapt the fixture values to your application)"
+  },
+  "Native browser.offline": {
+    "prefix": "flow.browser.offline",
+    "body": [
+      "flow.browser.offline {",
+      "  \"value\": true",
+      "};"
+    ],
+    "description": "Native Flowstride browser.offline (adapt the fixture values to your application)"
+  },
+  "Native browser.permissions": {
+    "prefix": "flow.browser.permissions",
+    "body": [
+      "flow.browser.permissions {",
+      "  \"permissions\": [",
+      "    \"microphone\"",
+      "  ]",
+      "};"
+    ],
+    "description": "Native Flowstride browser.permissions (adapt the fixture values to your application)"
+  },
+  "Native browser.clearPermissions": {
+    "prefix": "flow.browser.clearPermissions",
+    "body": [
+      "flow.browser.clearPermissions {};"
+    ],
+    "description": "Native Flowstride browser.clearPermissions (adapt the fixture values to your application)"
+  },
+  "Native browser.geolocation": {
+    "prefix": "flow.browser.geolocation",
+    "body": [
+      "flow.browser.geolocation {",
+      "  \"latitude\": 6.5244,",
+      "  \"longitude\": 3.3792",
+      "};"
+    ],
+    "description": "Native Flowstride browser.geolocation (adapt the fixture values to your application)"
+  },
+  "Native assert.that": {
+    "prefix": "flow.assert.that",
+    "body": [
+      "flow.assert.that {",
+      "  \"selector\": \"h1\",",
+      "  \"condition\": \"text\",",
+      "  \"value\": \"Ready\"",
+      "};"
+    ],
+    "description": "Native Flowstride assert.that (adapt the fixture values to your application)"
+  },
+  "Native network.route": {
+    "prefix": "flow.network.route",
+    "body": [
+      "flow.network.route {",
+      "  \"name\": \"catalog\",",
+      "  \"url\": \"**/api/catalog\",",
+      "  \"json\": {",
+      "    \"items\": []",
+      "  }",
+      "};"
+    ],
+    "description": "Native Flowstride network.route (adapt the fixture values to your application)"
+  },
+  "Native network.unroute": {
+    "prefix": "flow.network.unroute",
+    "body": [
+      "flow.network.unroute {",
+      "  \"name\": \"catalog\"",
+      "};"
+    ],
+    "description": "Native Flowstride network.unroute (adapt the fixture values to your application)"
+  },
+  "Native network.arm": {
+    "prefix": "flow.network.arm",
+    "body": [
+      "flow.network.arm {",
+      "  \"name\": \"catalogResponse\",",
+      "  \"url\": \"**/api/catalog\"",
+      "};"
+    ],
+    "description": "Native Flowstride network.arm (adapt the fixture values to your application)"
+  },
+  "Native network.wait": {
+    "prefix": "flow.network.wait",
+    "body": [
+      "flow.network.wait {",
+      "  \"name\": \"catalogResponse\"",
+      "};"
+    ],
+    "description": "Native Flowstride network.wait (adapt the fixture values to your application)"
+  },
+  "Native network.expect": {
+    "prefix": "flow.network.expect",
+    "body": [
+      "flow.network.expect {",
+      "  \"name\": \"catalogResponse\",",
+      "  \"status\": 200",
+      "};"
+    ],
+    "description": "Native Flowstride network.expect (adapt the fixture values to your application)"
+  },
+  "Native download.arm": {
+    "prefix": "flow.download.arm",
+    "body": [
+      "flow.download.arm {",
+      "  \"name\": \"receipt\"",
+      "};"
+    ],
+    "description": "Native Flowstride download.arm (adapt the fixture values to your application)"
+  },
+  "Native download.save": {
+    "prefix": "flow.download.save",
+    "body": [
+      "flow.download.save {",
+      "  \"name\": \"receipt\",",
+      "  \"file\": \"downloads/receipt.txt\"",
+      "};"
+    ],
+    "description": "Native Flowstride download.save (adapt the fixture values to your application)"
+  },
+  "Native download.expect": {
+    "prefix": "flow.download.expect",
+    "body": [
+      "flow.download.expect {",
+      "  \"name\": \"receipt\",",
+      "  \"minSize\": 1",
+      "};"
+    ],
+    "description": "Native Flowstride download.expect (adapt the fixture values to your application)"
+  },
+  "Native clock.install": {
+    "prefix": "flow.clock.install",
+    "body": [
+      "flow.clock.install {",
+      "  \"time\": \"2026-01-01T00:00:00Z\"",
+      "};"
+    ],
+    "description": "Native Flowstride clock.install (adapt the fixture values to your application)"
+  },
+  "Native clock.pauseAt": {
+    "prefix": "flow.clock.pauseAt",
+    "body": [
+      "flow.clock.pauseAt {",
+      "  \"time\": \"2026-01-01T00:00:01Z\"",
+      "};"
+    ],
+    "description": "Native Flowstride clock.pauseAt (adapt the fixture values to your application)"
+  },
+  "Native clock.resume": {
+    "prefix": "flow.clock.resume",
+    "body": [
+      "flow.clock.resume {};"
+    ],
+    "description": "Native Flowstride clock.resume (adapt the fixture values to your application)"
+  },
+  "Native clock.runFor": {
+    "prefix": "flow.clock.runFor",
+    "body": [
+      "flow.clock.runFor {",
+      "  \"milliseconds\": 1000",
+      "};"
+    ],
+    "description": "Native Flowstride clock.runFor (adapt the fixture values to your application)"
+  },
+  "Native clock.fastForward": {
+    "prefix": "flow.clock.fastForward",
+    "body": [
+      "flow.clock.fastForward {",
+      "  \"milliseconds\": 1000",
+      "};"
+    ],
+    "description": "Native Flowstride clock.fastForward (adapt the fixture values to your application)"
+  },
+  "Native clock.setFixedTime": {
+    "prefix": "flow.clock.setFixedTime",
+    "body": [
+      "flow.clock.setFixedTime {",
+      "  \"time\": \"2026-01-01T00:00:00Z\"",
+      "};"
+    ],
+    "description": "Native Flowstride clock.setFixedTime (adapt the fixture values to your application)"
+  },
+  "Native clock.setSystemTime": {
+    "prefix": "flow.clock.setSystemTime",
+    "body": [
+      "flow.clock.setSystemTime {",
+      "  \"time\": \"2026-01-01T00:00:00Z\"",
+      "};"
+    ],
+    "description": "Native Flowstride clock.setSystemTime (adapt the fixture values to your application)"
+  },
+  "Native stub.install": {
+    "prefix": "flow.stub.install",
+    "body": [
+      "flow.stub.install {",
+      "  \"name\": \"greeting\",",
+      "  \"target\": \"window.alert\",",
+      "  \"mode\": \"spy\"",
+      "};"
+    ],
+    "description": "Native Flowstride stub.install (adapt the fixture values to your application)"
+  },
+  "Native stub.expect": {
+    "prefix": "flow.stub.expect",
+    "body": [
+      "flow.stub.expect {",
+      "  \"name\": \"greeting\",",
+      "  \"count\": 1",
+      "};"
+    ],
+    "description": "Native Flowstride stub.expect (adapt the fixture values to your application)"
+  },
+  "Native stub.restore": {
+    "prefix": "flow.stub.restore",
+    "body": [
+      "flow.stub.restore {",
+      "  \"name\": \"greeting\"",
+      "};"
+    ],
+    "description": "Native Flowstride stub.restore (adapt the fixture values to your application)"
+  },
+  "Native trace.start": {
+    "prefix": "flow.trace.start",
+    "body": [
+      "flow.trace.start {",
+      "  \"name\": \"checkout\"",
+      "};"
+    ],
+    "description": "Native Flowstride trace.start (adapt the fixture values to your application)"
+  },
+  "Native trace.stop": {
+    "prefix": "flow.trace.stop",
+    "body": [
+      "flow.trace.stop {};"
+    ],
+    "description": "Native Flowstride trace.stop (adapt the fixture values to your application)"
+  },
+  "Native har.replay": {
+    "prefix": "flow.har.replay",
+    "body": [
+      "flow.har.replay {",
+      "  \"file\": \"fixtures/catalog.har\",",
+      "  \"notFound\": \"abort\"",
+      "};"
+    ],
+    "description": "Native Flowstride har.replay (adapt the fixture values to your application)"
+  },
+  "Native a11y.scan": {
+    "prefix": "flow.a11y.scan",
+    "body": [
+      "flow.a11y.scan {",
+      "  \"name\": \"checkout\",",
+      "  \"maxViolations\": 0",
+      "};"
+    ],
+    "description": "Native Flowstride a11y.scan (adapt the fixture values to your application)"
+  },
+  "Native a11y.snapshot": {
+    "prefix": "flow.a11y.snapshot",
+    "body": [
+      "flow.a11y.snapshot {",
+      "  \"name\": \"checkout\",",
+      "  \"selector\": \"body\"",
+      "};"
+    ],
+    "description": "Native Flowstride a11y.snapshot (adapt the fixture values to your application)"
+  },
+  "Native a11y.match": {
+    "prefix": "flow.a11y.match",
+    "body": [
+      "flow.a11y.match {",
+      "  \"selector\": \"body\",",
+      "  \"yaml\": \"- heading \\\"Ready\\\" [level=1]\"",
+      "};"
+    ],
+    "description": "Native Flowstride a11y.match (adapt the fixture values to your application)"
+  },
+  "Native component.mount": {
+    "prefix": "flow.component.mount",
+    "body": [
+      "flow.component.mount {",
+      "  \"module\": \"components/button.ts\",",
+      "  \"framework\": \"vanilla\"",
+      "};"
+    ],
+    "description": "Native Flowstride component.mount (adapt the fixture values to your application)"
+  },
+  "Native component.update": {
+    "prefix": "flow.component.update",
+    "body": [
+      "flow.component.update {",
+      "  \"props\": {",
+      "    \"label\": \"Continue\"",
+      "  }",
+      "};"
+    ],
+    "description": "Native Flowstride component.update (adapt the fixture values to your application)"
+  },
+  "Native component.unmount": {
+    "prefix": "flow.component.unmount",
+    "body": [
+      "flow.component.unmount {};"
+    ],
+    "description": "Native Flowstride component.unmount (adapt the fixture values to your application)"
+  },
+  "Click a button": {
+    "prefix": "flow.click",
+    "body": [
+      "flow.click button \"${1:Submit}\";"
+    ],
+    "description": "Click a button by its readable name"
+  },
+  "Type into an input": {
+    "prefix": "flow.type",
+    "body": [
+      "flow.type input \"${1:Email}\" \"${2:reader@example.test}\";"
+    ],
+    "description": "Fill an input using its readable target"
+  },
+  "Visible expectation": {
+    "prefix": "flow.expect",
+    "body": [
+      "flow.expect visible \"${1:Ready}\";"
+    ],
+    "description": "Assert a visible result"
   }
 }

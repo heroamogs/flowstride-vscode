@@ -1,3 +1,4 @@
+import { validateExpectationType, validateResponseTimeThreshold } from './assertion_contract';
 import { Token, TokenType } from "./lexer";
 
 export interface DeclarationNode {
@@ -340,7 +341,7 @@ export class Parser {
       return {
         id: `scenario_${this.scenarioCounter}_S${this.stepCounter++}`,
         blockDescription: this.currentBlockDescription,
-        action: "plugin",
+        action: alias === "flow" ? "native" : "plugin",
         payload: {
           pluginAlias: alias,
           pluginMethod: method,
@@ -537,7 +538,13 @@ export class Parser {
         payload.verb = this.consume(
           TokenType.COMMAND,
           "Expected API verb (e.g. POST)",
-        ).value.toLowerCase();
+        ).value.toLowerCase().replace(/^flow\./, '');
+        if (!['get', 'post', 'put', 'patch', 'delete'].includes(payload.verb)) {
+          throw new Error('Authentication refresh requires an HTTP verb: get, post, put, patch or delete.');
+        }
+        if (!['401', '403'].includes(payload.targetStatus)) {
+          throw new Error('Authentication refresh status must be 401 or 403.');
+        }
         payload.url = this.consume(
           TokenType.STRING,
           "Endpoint URL expected",
@@ -730,6 +737,7 @@ export class Parser {
           );
         }
 
+        validateExpectationType(mod);
         payload.type = mod;
 
         if (mod === "status") {
@@ -748,6 +756,7 @@ export class Parser {
             TokenType.STRING,
             "Time threshold expected",
           ).value;
+          validateResponseTimeThreshold(payload.threshold, true);
         } else if (
           mod === "resBody" ||
           mod === "resHeader" ||

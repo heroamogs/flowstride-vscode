@@ -1,0 +1,123 @@
+{
+  "browser.create": {
+    "name": "customer"
+  },
+  "browser.use": {
+    "name": "customer"
+  },
+  "browser.close": {
+    "name": "customer"
+  },
+  "browser.list": {},
+  "browser.offline": {
+    "value": true
+  },
+  "browser.permissions": {
+    "permissions": [
+      "microphone"
+    ]
+  },
+  "browser.clearPermissions": {},
+  "browser.geolocation": {
+    "latitude": 6.5244,
+    "longitude": 3.3792
+  },
+  "assert.that": {
+    "selector": "h1",
+    "condition": "text",
+    "value": "Ready"
+  },
+  "network.route": {
+    "name": "catalog",
+    "url": "**/api/catalog",
+    "json": {
+      "items": []
+    }
+  },
+  "network.unroute": {
+    "name": "catalog"
+  },
+  "network.arm": {
+    "name": "catalogResponse",
+    "url": "**/api/catalog"
+  },
+  "network.wait": {
+    "name": "catalogResponse"
+  },
+  "network.expect": {
+    "name": "catalogResponse",
+    "status": 200
+  },
+  "download.arm": {
+    "name": "receipt"
+  },
+  "download.save": {
+    "name": "receipt",
+    "file": "downloads/receipt.txt"
+  },
+  "download.expect": {
+    "name": "receipt",
+    "minSize": 1
+  },
+  "clock.install": {
+    "time": "2026-01-01T00:00:00Z"
+  },
+  "clock.pauseAt": {
+    "time": "2026-01-01T00:00:01Z"
+  },
+  "clock.resume": {},
+  "clock.runFor": {
+    "milliseconds": 1000
+  },
+  "clock.fastForward": {
+    "milliseconds": 1000
+  },
+  "clock.setFixedTime": {
+    "time": "2026-01-01T00:00:00Z"
+  },
+  "clock.setSystemTime": {
+    "time": "2026-01-01T00:00:00Z"
+  },
+  "stub.install": {
+    "name": "greeting",
+    "target": "window.alert",
+    "mode": "spy"
+  },
+  "stub.expect": {
+    "name": "greeting",
+    "count": 1
+  },
+  "stub.restore": {
+    "name": "greeting"
+  },
+  "trace.start": {
+    "name": "checkout"
+  },
+  "trace.stop": {},
+  "har.replay": {
+    "file": "fixtures/catalog.har",
+    "notFound": "abort"
+  },
+  "a11y.scan": {
+    "name": "checkout",
+    "maxViolations": 0
+  },
+  "a11y.snapshot": {
+    "name": "checkout",
+    "selector": "body"
+  },
+  "a11y.match": {
+    "selector": "body",
+    "yaml": "- heading \"Ready\" [level=1]"
+  },
+  "component.mount": {
+    "module": "components/button.ts",
+    "framework": "vanilla"
+  },
+  "component.update": {
+    "props": {
+      "label": "Continue"
+    }
+  },
+  "component.unmount": {}
+}

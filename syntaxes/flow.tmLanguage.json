@@ -12,6 +12,9 @@
       "include": "#strings"
     },
     {
+      "include": "#json"
+    },
+    {
       "include": "#commands"
     },
     {
@@ -34,6 +37,20 @@
     },
     "keywords": {
       "patterns": [
+        {
+          "match": "^\\s*(Feature|(?:only\\.)?Scenario)(:)(.*)$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.flow"
+            },
+            "2": {
+              "name": "punctuation.separator.flow"
+            },
+            "3": {
+              "name": "entity.name.section.flow"
+            }
+          }
+        },
         {
           "match": "\\b(only\\.)(Scenario)\\b",
           "captures": {
@@ -68,6 +85,10 @@
     },
     "commands": {
       "patterns": [
+        {
+          "match": "\\bflow\\.(browser|assert|network|download|clock|stub|trace|har|a11y|component)\\.[a-zA-Z]+\\b",
+          "name": "support.function.flow"
+        },
         {
           "match": "\\b(flow\\.[a-zA-Z0-9_.]+)\\b",
           "name": "entity.name.function.flow"
@@ -107,6 +128,10 @@
           "name": "string.quoted.double.flow",
           "patterns": [
             {
+              "match": "\\\\.",
+              "name": "constant.character.escape.flow"
+            },
+            {
               "match": "\\{\\{env\\.[a-zA-Z0-9_]+\\}\\}",
               "name": "variable.language.env.flow"
             },
@@ -123,6 +148,16 @@
         {
           "match": "[@$][a-zA-Z0-9_]+",
           "name": "variable.other.flow"
+        }
+      ]
+    },
+    "json": {
+      "begin": "\\{",
+      "end": "\\}",
+      "name": "meta.embedded.block.json.flow",
+      "patterns": [
+        {
+          "include": "source.json"
         }
       ]
     }

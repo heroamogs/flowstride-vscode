@@ -1,6 +1,7 @@
 import { locateRunner } from "./runner";
-import { Lexer } from "./language/lexer";
-import { Parser } from "./language/parser";
+import { diagnoseFlow } from "./language/diagnostics";
+import { formatFlowLines } from "./language/formatter";
+import { nativeCommands, gameCommands } from "./language/catalog";
 import * as vscode from "vscode";
 
 const diagnosticCollection =
@@ -108,10 +109,21 @@ export function activate(context: vscode.ExtensionContext) {
           const gameAliases = [...document.getText().matchAll(/\blet\s+(\w+)\s*=\s*["']flowstride:game["']/g)].map(match=>match[1]);
           const alias = linePrefix.match(/([A-Za-z_]\w*)\.$/)?.[1];
           if (alias && gameAliases.includes(alias)) {
-            return ['tap','drag','swipe','key','checkpoint','snapshot','expectVisual','state','expectState','snapshotState','expectPreserved','fixture','select'].map(action=>{
+            return gameCommands.map(action=>{
               const item=new vscode.CompletionItem(action,vscode.CompletionItemKind.Method);
               item.detail='Native Flowstride game action';return item;
             });
+          }
+
+          const native = nativeCommands;
+          const nativeArea = linePrefix.match(/flow\.([a-z][a-z0-9]*)\.$/)?.[1];
+          if (nativeArea && native[nativeArea]) return native[nativeArea].map(action => {
+            const item = new vscode.CompletionItem(action,vscode.CompletionItemKind.Method);
+            item.detail = 'Native Flowstride browser capability'; return item;
+          });
+          if (linePrefix.endsWith('flow.')) for (const area of Object.keys(native)) {
+            const item = new vscode.CompletionItem(area,vscode.CompletionItemKind.Method);
+            item.detail = 'Native Flowstride command group'; items.push(item);
           }
 
           // 1. Actions (flow.)
@@ -156,10 +168,9 @@ export function activate(context: vscode.ExtensionContext) {
               const documentText = document.getText();
               const usedGenerators =
                 documentText.match(/\$[A-Za-z0-9_\[\]]+/g) || [];
-              const usedVariables = documentText.match(/@[A-Za-z0-9_]+/g) || [];
-              const allUsed = [
-                ...new Set([...usedGenerators, ...usedVariables]),
-              ];
+              const references = documentText.match(/(?<![a-zA-Z0-9_])@(?:global\[[a-zA-Z_]\w*\]|[a-zA-Z_]\w*)/g) || [];
+              const declarations = [...documentText.matchAll(/\b(?:as|into)\s+(?:(global)\s+)?["“]([a-zA-Z_]\w*)["”]/g)].map(match => match[1] ? `@global[${match[2]}]` : `@${match[2]}`);
+              const allUsed = [...new Set([...usedGenerators, ...references, ...declarations])];
 
               allUsed.forEach((val) => {
                 const cleanName = val.replace(/^[$@]/, "");
@@ -186,95 +197,32 @@ export function activate(context: vscode.ExtensionContext) {
     ),
   );
 
-  // --- NATIVE AUTO-FORMATTER & SEMICOLON INJECTOR ---
   context.subscriptions.push(
     vscode.languages.registerDocumentFormattingEditProvider("flow", {
-      provideDocumentFormattingEdits(
-        document: vscode.TextDocument,
-      ): vscode.TextEdit[] {
-        const edits: vscode.TextEdit[] = [];
-        const protectedLines = new Set<number>();
-        try {
-          const tokens = new Lexer(document.getText()).tokenise();
-          for (const token of tokens) if (token.type === 'JSON_PAYLOAD' || (token.type === 'STRING' && token.value.includes('\n'))) {
-            const count=(token.value.match(/\n/g)||[]).length;
-            for(let line=token.line-1;line<=token.line+count;line++)protectedLines.add(line);
-          }
-        } catch { return []; }
-
-        const lines = document.getText().split("\n");
-
-        let inDocString = false;
-        let currentIndent = "";
-
-        for (let i = 0; i < lines.length; i++) {
-          const rawLine = lines[i];
-          if (protectedLines.has(i)) continue;
-          let line = rawLine.trim();
-
-          // 1. Skip formatting inside multiline strings """
-          if (line.includes('"""')) {
-            const count = (line.match(/"""/g) || []).length;
-            if (count % 2 !== 0) {
-              inDocString = !inDocString;
-            }
-            if (inDocString || count > 0) continue;
-          }
-          if (inDocString) continue;
-
-          // 2. Clean up blank lines
-          if (!line) {
-            if (rawLine.length > 0) {
-              edits.push(vscode.TextEdit.replace(document.lineAt(i).range, ""));
-            }
-            continue;
-          }
-
-          // 3. Determine semantic indentation level
-          const lowerLine = line.toLowerCase();
-
-          if (lowerLine.startsWith("feature:")) {
-            currentIndent = "";
-          } else if (
-            lowerLine.startsWith("scenario:") ||
-            lowerLine.startsWith("only.scenario:")
-          ) {
-            currentIndent = "  "; // 2 Spaces
-          } else if (
-            /^(given|when|then|and|stop\.given|stop\.when|stop\.then|stop\.and)\b/i.test(
-              line,
-            ) ||
-            lowerLine.startsWith("let ")
-          ) {
-            currentIndent = "  "; // 2 Spaces
-          } else if (
-            lowerLine.startsWith("flow.") ||
-            line.match(/^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+/)
-          ) {
-            currentIndent = "    "; // 4 Spaces
-
-            // 4. Inject semicolon at the end of execution scripts if missing
-            if (!line.endsWith(";")) {
-              line += ";";
-            }
-          } else if (line.startsWith("//") || line.startsWith("/*")) {
-            // Keep comments aligned with whatever the current scope is
-          } else {
-            currentIndent = "    "; // Fallback for unmatched action payloads (like 'with')
-          }
-
-          const formattedLine = currentIndent + line;
-
-          // Only push an edit if the line actually needs changing
-          if (rawLine !== formattedLine) {
-            edits.push(
-              vscode.TextEdit.replace(document.lineAt(i).range, formattedLine),
-            );
-          }
-        }
-        return edits;
+      provideDocumentFormattingEdits(document, options) {
+        const lines = formatFlowLines(document.getText(), options);
+        return lines.flatMap((line, index) => {
+          const original = document.lineAt(index);
+          return original.text === line ? [] : [vscode.TextEdit.replace(original.range, line)];
+        });
       },
     }),
+  );
+
+  context.subscriptions.push(
+    vscode.languages.registerCodeActionsProvider("flow", {
+      provideCodeActions(document, _range, context) {
+        return context.diagnostics.flatMap(diagnostic => {
+          if (diagnostic.code !== 'flowstride.misplacedSemicolon') return [];
+          const action = new vscode.CodeAction("Remove semicolon after JSON opening brace", vscode.CodeActionKind.QuickFix);
+          action.diagnostics = [diagnostic];
+          action.isPreferred = true;
+          action.edit = new vscode.WorkspaceEdit();
+          action.edit.delete(document.uri, diagnostic.range);
+          return [action];
+        });
+      },
+    }, { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }),
   );
 
   if (vscode.window.activeTextEditor) {
@@ -294,15 +242,15 @@ export function activate(context: vscode.ExtensionContext) {
 
 function updateDiagnostics(document: vscode.TextDocument) {
   if (document.languageId !== 'flow') return;
-  const diagnostics:vscode.Diagnostic[]=[];
-  try { new Parser(new Lexer(document.getText()).tokenise()).parse(); }
-  catch (error) {
-    const message=error instanceof Error?error.message:String(error);
-    const match=message.match(/(?:on line|Line|line)\s+(\d+)/);
-    const line=Math.min(Math.max(0,Number(match?.[1]||1)-1),document.lineCount-1);
-    diagnostics.push(new vscode.Diagnostic(document.lineAt(line).range,message,vscode.DiagnosticSeverity.Error));
-  }
-  diagnosticCollection.set(document.uri,diagnostics);
+  const diagnostics = diagnoseFlow(document.getText()).map(item => {
+    const line = Math.min(item.line, document.lineCount - 1);
+    const range = item.character === undefined ? document.lineAt(line).range : new vscode.Range(line, item.character, line, item.character + 1);
+    const diagnostic = new vscode.Diagnostic(range, item.message, vscode.DiagnosticSeverity.Error);
+    diagnostic.source = 'Flowstride';
+    diagnostic.code = item.code;
+    return diagnostic;
+  });
+  diagnosticCollection.set(document.uri, diagnostics);
 }
 
 export function deactivate() {

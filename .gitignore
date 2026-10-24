@@ -10,3 +10,7 @@ runtime-audit.json
 out/
 *.vsix
 .vscode-test/
+
+# Local acceptance files
+**/.DS_Store
+.engine-os/
