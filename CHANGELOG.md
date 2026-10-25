@@ -1,3 +1,8 @@
+## 1.0.5
+
+- Align assertion diagnostics with OS and Cloud: native assertion commands work under `And`, including after `Then`.
+- Preserve restrictions on state-changing commands under `And`.
+
 # Changelog
 
 ## 1.0.4

@@ -37,7 +37,7 @@ test('the screenshot title is valid; real malformed syntax and unknown native co
   assert.deepEqual(diagnoseFlow(wrap('flow.open "/";')), []);
   for (const source of [wrap('flow.assert.that {"condition":"text",}'), wrap('flow.browser.unknown {}'), wrap('flow.expect unsupported "x";')]) assert(diagnoseFlow(source).length > 0);
   const and = wrap('flow.assert.that {"selector":"h1","condition":"visible"};').replace('When "Exercise native command"','When "Prepare"\n flow.open "/";\nAnd "Native assertion"');
-  assert(diagnoseFlow(and)[0].message.includes('current engines require'));
+  assert.deepEqual(diagnoseFlow(and), []);
 });
 test('misplaced opening semicolon has a precise quick fix that leaves strings and comments untouched', () => {
   const source = wrap('flow.assert.that {;\n "selector": "h1",\n "condition": "visible"\n};');
@@ -67,4 +67,10 @@ test('highlighting recognizes every native family and apostrophes do not create 
   const heading=grammar.repository.keywords.patterns[0];assert(new RegExp(heading.match).test("Feature: User login's flow"));
   assert(grammar.repository.json.patterns.some(p=>p.include==='source.json'));
   assert(!config.autoClosingPairs.some(p=>p.open==="'"));
+});
+
+test('native assertion And blocks after Then match both new engines and preserve action restrictions',()=>{
+ const prefix='Feature: Native assertion blocks\nScenario: Follow-up checks\nGiven "Setup"\nWhen "Act"\nflow.open "/";\nThen "First check"\nflow.expect visible "Ready";\nAnd "More checks"\n';
+ for(const method of ['assert.that','network.expect','download.expect','stub.expect','a11y.scan','a11y.match'])assert.deepEqual(diagnoseFlow(prefix+`flow.${method} {};`),[]);
+ for(const method of ['browser.create','clock.install','stub.install','a11y.snapshot'])assert(diagnoseFlow(prefix+`flow.${method} {};`).length>0);
 });

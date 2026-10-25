@@ -47,7 +47,7 @@ for (const [engine, root] of [['OS', process.env.FLOWSTRIDE_OS_ROOT], ['Cloud', 
       assert.deepEqual(parse(formatted),engineParse(source),file); assert.deepEqual(diagnoseFlow(formatted),[],file);
     }
     const and = wrap('flow.assert.that {"selector":"h1","condition":"visible"};').replace('When "Act"','When "Prepare"\n flow.open "/";\nAnd "Check"');
-    assert.throws(()=>engineParse(and),/And blocks/); assert(diagnoseFlow(and)[0].message.includes('And blocks'));
+    assert.deepEqual(parse(and),engineParse(and)); assert.deepEqual(diagnoseFlow(and),[]);
     console.log(`${engine}: ${files.length} shipped flows and all 36 native commands matched.`);
   });
 }

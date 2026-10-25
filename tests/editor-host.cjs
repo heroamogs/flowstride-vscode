@@ -3,7 +3,7 @@ exports.run=async()=>{
   const vscode=require('vscode'),root=process.env.FLOWSTRIDE_EDITOR_TEST_DIR;
   assert(root,'Choose an isolated editor test directory');fs.mkdirSync(root,{recursive:true});
   const extension=vscode.extensions.getExtension('flowstride.flowstride-vscode');assert(extension);await extension.activate();
-  assert.equal(extension.packageJSON.version,'1.0.4');
+  assert.equal(extension.packageJSON.version,require('../package.json').version);
   const {nativeCommands,gameCommands}=require('../out/language/catalog'),fixtures=require('./fixtures/native-commands.json');
   const {Lexer}=require('../out/language/lexer'),{Parser}=require('../out/language/parser');
   const parse=text=>new Parser(new Lexer(text).tokenise()).parse();

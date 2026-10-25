@@ -1,4 +1,4 @@
-import { validateExpectationType, validateResponseTimeThreshold } from './assertion_contract';
+import { validateExpectationType, validateResponseTimeThreshold, isAssertionStep } from './assertion_contract';
 import { Token, TokenType } from "./lexer";
 
 export interface DeclarationNode {
@@ -155,7 +155,7 @@ export class Parser {
       if (token.type === TokenType.LET) {
         declarations.push(this.parseDeclaration());
       } else if (token.type === TokenType.BLOCK) {
-        if (isLocked)
+        if (isLocked && token.value.toLowerCase().replace(/^stop\./, '') !== 'and')
           throw new Error(
             `Line ${token.line}: Terminal Lock Violation. No steps allowed after Then.`,
           );
@@ -216,7 +216,7 @@ export class Parser {
         token.type === TokenType.COMMAND ||
         token.type === TokenType.ALIAS_COMMAND
       ) {
-        if (isLocked && currentBlockType !== "then") {
+        if (isLocked && currentBlockType !== "then" && currentBlockType !== "and") {
           throw new Error(`Line ${token.line}: Terminal Lock Violation.`);
         }
         const step = this.parseCommand();
@@ -227,8 +227,7 @@ export class Parser {
 
         if (
           currentBlockType === "and" &&
-          step.action !== "expect" &&
-          step.action !== "plugin"
+          !isAssertionStep(step.action, step.payload)
         ) {
           throw new Error(
             `Line ${token.line}: And blocks are strictly for assertions or custom assertion plugins.`,

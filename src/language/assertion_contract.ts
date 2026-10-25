@@ -45,3 +45,9 @@ export function validateApiAssertions(assertions: unknown): asserts assertions i
     }
   }
 }
+
+/** And remains limited to assertions and existing custom assertion plugins. */
+export const nativeAssertionCommands = new Set(['assert.that','network.expect','download.expect','stub.expect','a11y.scan','a11y.match']);
+export function isAssertionStep(action: string, payload: any): boolean {
+  return action === 'expect' || action === 'plugin' || action === 'native' && nativeAssertionCommands.has(payload?.pluginMethod);
+}

@@ -66,7 +66,7 @@ Feature: Submit a form
       };
 ```
 
-The current engines restrict `And` blocks to `flow.expect` and custom assertion plugins. Use `When` for an intermediate native assertion or `Then` for the final native assertion. The editor reports that engine restriction; changing the extension does not change execution rules.
+Native checks `flow.assert.that`, `flow.network.expect`, `flow.download.expect`, `flow.stub.expect`, `flow.a11y.scan` and `flow.a11y.match` are accepted under `And`, including after `Then`. State-changing native commands still require an action block. Use matching engines for these execution rules.
 
 Native commands still require an engine that implements them. Browser installation, FlowMail access, application credentials, component dependencies and fixtures are execution prerequisites. Audio-file microphone injection requires Chromium. Read the [Flowstride documentation](https://docs.flowstride.io/) for complete setup and command behavior.
 

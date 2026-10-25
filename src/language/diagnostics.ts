@@ -21,7 +21,6 @@ export function diagnoseFlow(text: string): FlowDiagnostic[] {
     let message = error instanceof Error ? error.message : String(error);
     const match = message.match(/(?:on line|Line|line)\s+(\d+)/);
     const line = Math.min(Math.max(0, Number(match?.[1] || 1) - 1), text.split(/\r?\n/).length - 1);
-    if (/And blocks are strictly/.test(message) && /^\s*flow\.(?:assert\.that|(?:network|download|stub)\.expect|a11y\.(?:scan|match))\b/.test(text.split(/\r?\n/)[line] || '')) message += ' The current engines require this native command under When or Then.';
     return [{ line, message }];
   }
 }
