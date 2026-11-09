@@ -101,12 +101,15 @@
     "prefix": "flow.assert.that",
     "body": [
       "flow.assert.that {",
-      "  \"selector\": \"h1\",",
-      "  \"condition\": \"text\",",
-      "  \"value\": \"Ready\"",
+      "  \"target\": {",
+      "    \"text\": \"Submit\",",
+      "    \"element\": \"button\",",
+      "    \"inside\": \"Checkout\"",
+      "  },",
+      "  \"condition\": \"enabled\"",
       "};"
     ],
-    "description": "Native Flowstride assert.that (adapt the fixture values to your application)"
+    "description": "Check a browser condition on a readable target"
   },
   "Native network.route": {
     "prefix": "flow.network.route",
@@ -383,5 +386,467 @@
       "flow.expect visible \"${1:Ready}\";"
     ],
     "description": "Assert a visible result"
+  },
+  "Native assert.value": {
+    "prefix": "flow.assert.value",
+    "body": [
+      "flow.assert.value {",
+      "  \"actual\": \"@quantity\",",
+      "  \"operator\": \"equals\",",
+      "  \"expected\": 2,",
+      "  \"message\": \"The order has two items\"",
+      "};"
+    ],
+    "description": "Compare a stored value using its JSON type"
+  },
+  "Native input.type": {
+    "prefix": "flow.input.type",
+    "body": [
+      "flow.input.type {",
+      "  \"target\": {",
+      "    \"text\": \"Search\",",
+      "    \"element\": \"input\",",
+      "    \"inside\": \"Customer search\"",
+      "  },",
+      "  \"text\": \" to Abuja\",",
+      "  \"clear\": false,",
+      "  \"delay\": 25,",
+      "  \"blur\": false",
+      "};"
+    ],
+    "description": "Type into a readable target with configurable delay, clearing and focus"
+  },
+  "Native scroll": {
+    "prefix": "flow.scroll",
+    "body": [
+      "flow.scroll {",
+      "  \"target\": \"Customer records\",",
+      "  \"y\": 240",
+      "};"
+    ],
+    "description": "Scroll an element or the active document"
+  },
+  "Native tab.name": {
+    "prefix": "flow.tab.name",
+    "body": [
+      "flow.tab.name {",
+      "  \"name\": \"main\"",
+      "};"
+    ],
+    "description": "Name the current tab"
+  },
+  "Native tab.arm": {
+    "prefix": "flow.tab.arm",
+    "body": [
+      "flow.tab.arm {",
+      "  \"name\": \"receipt\",",
+      "  \"timeout\": 5000",
+      "};"
+    ],
+    "description": "Capture the next popup from the current tab"
+  },
+  "Native tab.use": {
+    "prefix": "flow.tab.use",
+    "body": [
+      "flow.tab.use {",
+      "  \"name\": \"receipt\"",
+      "};"
+    ],
+    "description": "Select a named tab"
+  },
+  "Native tab.close": {
+    "prefix": "flow.tab.close",
+    "body": [
+      "flow.tab.close {",
+      "  \"name\": \"receipt\"",
+      "};"
+    ],
+    "description": "Close a named tab"
+  },
+  "Native frame.use": {
+    "prefix": "flow.frame.use",
+    "body": [
+      "flow.frame.use {",
+      "  \"target\": {",
+      "    \"text\": \"Delivery details\",",
+      "    \"element\": \"iframe\"",
+      "  }",
+      "};"
+    ],
+    "description": "Enter a named iframe"
+  },
+  "Native frame.main": {
+    "prefix": "flow.frame.main",
+    "body": [
+      "flow.frame.main {};"
+    ],
+    "description": "Return to the main document"
+  },
+  "Native dialog.arm": {
+    "prefix": "flow.dialog.arm",
+    "body": [
+      "flow.dialog.arm {",
+      "  \"name\": \"rename-order\",",
+      "  \"action\": \"accept\",",
+      "  \"promptText\": \"Office supplies\",",
+      "  \"timeout\": 5000",
+      "};"
+    ],
+    "description": "Arm a response to the next browser dialog"
+  },
+  "Native dialog.expect": {
+    "prefix": "flow.dialog.expect",
+    "body": [
+      "flow.dialog.expect {",
+      "  \"name\": \"rename-order\",",
+      "  \"type\": \"prompt\",",
+      "  \"message\": \"Enter order name\"",
+      "};"
+    ],
+    "description": "Check the captured dialog"
+  },
+  "Native files.select": {
+    "prefix": "flow.files.select",
+    "body": [
+      "flow.files.select {",
+      "  \"target\": {",
+      "    \"text\": \"Attach documents\",",
+      "    \"element\": \"input\"",
+      "  },",
+      "  \"files\": [",
+      "    \"fixtures/invoice.txt\",",
+      "    \"fixtures/receipt.txt\"",
+      "  ]",
+      "};"
+    ],
+    "description": "Select project-local files in a labelled upload field"
+  },
+  "Native data.load": {
+    "prefix": "flow.data.load",
+    "body": [
+      "flow.data.load {",
+      "  \"file\": \"fixtures/customer.json\",",
+      "  \"as\": \"customer\"",
+      "};"
+    ],
+    "description": "Load fixture data into a variable"
+  },
+  "Native data.cases": {
+    "prefix": "flow.data.cases",
+    "body": [
+      "flow.data.cases {",
+      "  \"file\": \"fixtures/customers.json\"",
+      "};"
+    ],
+    "description": "Run the scenario for each fixture row. Place this first in Given"
+  },
+  "Native data.seed": {
+    "prefix": "flow.data.seed",
+    "body": [
+      "flow.data.seed \"customer-signup-regression\";"
+    ],
+    "description": "Set the sequence for repeatable generated values"
+  },
+  "Native file.read": {
+    "prefix": "flow.file.read",
+    "body": [
+      "flow.file.read {",
+      "  \"file\": \"fixtures/customers.csv\",",
+      "  \"format\": \"csv\",",
+      "  \"as\": \"customers\"",
+      "};"
+    ],
+    "description": "Read a project-local file into a variable"
+  },
+  "Native call": {
+    "prefix": "flow.call",
+    "body": [
+      "flow.call \"steps/customer.flowpart\";"
+    ],
+    "description": "Call a project-local command fragment"
+  },
+  "Native cleanup.register": {
+    "prefix": "flow.cleanup.register",
+    "body": [
+      "flow.cleanup.register {",
+      "  \"method\": \"DELETE\",",
+      "  \"url\": \"/api/orders/@orderId\"",
+      "};"
+    ],
+    "description": "Queue a same-origin DELETE after the scenario attempt"
+  },
+  "Native skipIf": {
+    "prefix": "flow.skipIf",
+    "body": [
+      "flow.skipIf {",
+      "  \"browser\": \"webkit\",",
+      "  \"reason\": \"This scenario requires Chromium microphone injection\"",
+      "};"
+    ],
+    "description": "Skip a scenario for a browser. Place at the start of Given or after flow.data.cases"
+  },
+  "Native api.request": {
+    "prefix": "flow.api.request",
+    "body": [
+      "flow.api.request {",
+      "  \"method\": \"POST\",",
+      "  \"url\": \"/api/documents\",",
+      "  \"multipart\": {",
+      "    \"description\": \"Test document\",",
+      "    \"file\": {",
+      "      \"path\": \"fixtures/document.pdf\",",
+      "      \"contentType\": \"application/pdf\"",
+      "    }",
+      "  },",
+      "  \"timeout\": 15000",
+      "};"
+    ],
+    "description": "Send a structured request. This example uploads a PDF and description"
+  },
+  "Native api.create": {
+    "prefix": "flow.api.create",
+    "body": [
+      "flow.api.create {",
+      "  \"name\": \"administrator\",",
+      "  \"baseUrl\": \"{{env.API_URL}}\",",
+      "  \"cookies\": true",
+      "};"
+    ],
+    "description": "Create a separate API context"
+  },
+  "Native api.use": {
+    "prefix": "flow.api.use",
+    "body": [
+      "flow.api.use {",
+      "  \"name\": \"administrator\"",
+      "};"
+    ],
+    "description": "Select a named API context"
+  },
+  "Native api.close": {
+    "prefix": "flow.api.close",
+    "body": [
+      "flow.api.close {",
+      "  \"name\": \"administrator\"",
+      "};"
+    ],
+    "description": "Close a named API context"
+  },
+  "Native api.expectSchema": {
+    "prefix": "flow.api.expectSchema",
+    "body": [
+      "flow.api.expectSchema {",
+      "  \"file\": \"fixtures/order.schema.json\"",
+      "};"
+    ],
+    "description": "Validate the latest API JSON response with a project-local schema"
+  },
+  "Native api.poll": {
+    "prefix": "flow.api.poll",
+    "body": [
+      "flow.api.poll {",
+      "  \"url\": \"/api/jobs/@jobId\",",
+      "  \"path\": \"status\",",
+      "  \"equals\": \"completed\",",
+      "  \"interval\": 500,",
+      "  \"timeout\": 15000",
+      "};"
+    ],
+    "description": "Poll a JSON response until a field reaches the expected value"
+  },
+  "Native console.arm": {
+    "prefix": "flow.console.arm",
+    "body": [
+      "flow.console.arm {",
+      "  \"name\": \"save-message\",",
+      "  \"level\": \"info\",",
+      "  \"contains\": \"Customer saved\"",
+      "};"
+    ],
+    "description": "Start watching for an application console message"
+  },
+  "Native console.expect": {
+    "prefix": "flow.console.expect",
+    "body": [
+      "flow.console.expect {",
+      "  \"name\": \"save-message\",",
+      "  \"timeout\": 5000",
+      "};"
+    ],
+    "description": "Check the armed console message"
+  },
+  "Native channel.arm": {
+    "prefix": "flow.channel.arm",
+    "body": [
+      "flow.channel.arm {",
+      "  \"name\": \"order-updates\",",
+      "  \"protocol\": \"websocket\",",
+      "  \"url\": \"**/orders/socket\"",
+      "};"
+    ],
+    "description": "Start watching WebSocket or EventSource messages"
+  },
+  "Native channel.expect": {
+    "prefix": "flow.channel.expect",
+    "body": [
+      "flow.channel.expect {",
+      "  \"name\": \"order-updates\",",
+      "  \"path\": \"event\",",
+      "  \"equals\": \"order.updated\"",
+      "};"
+    ],
+    "description": "Check an armed channel message"
+  },
+  "Native visual.capture": {
+    "prefix": "flow.visual.capture",
+    "body": [
+      "flow.visual.capture {",
+      "  \"name\": \"order-summary\",",
+      "  \"target\": {",
+      "    \"text\": \"Order summary\",",
+      "    \"inside\": \"Checkout\"",
+      "  }",
+      "};"
+    ],
+    "description": "Capture a PNG for visual baseline review"
+  },
+  "Native visual.match": {
+    "prefix": "flow.visual.match",
+    "body": [
+      "flow.visual.match {",
+      "  \"target\": {",
+      "    \"text\": \"Order summary\",",
+      "    \"inside\": \"Checkout\"",
+      "  },",
+      "  \"baseline\": \"baselines/order-summary.png\",",
+      "  \"maxDiffRatio\": 0.01",
+      "};"
+    ],
+    "description": "Compare a readable target with an approved PNG"
+  },
+  "Native soft": {
+    "prefix": "flow.soft",
+    "body": [
+      "flow.soft assert.that {",
+      "  \"target\": {",
+      "    \"text\": \"Email\",",
+      "    \"element\": \"input\"",
+      "  },",
+      "  \"condition\": \"editable\"",
+      "};"
+    ],
+    "description": "Record an assertion failure and continue checking"
+  },
+  "Native wait": {
+    "prefix": "flow.wait",
+    "body": [
+      "flow.wait ${1:250};"
+    ],
+    "description": "Wait a deliberate number of milliseconds"
+  },
+  "Native log": {
+    "prefix": "flow.log",
+    "body": [
+      "flow.log \"${1:Order submitted}\";"
+    ],
+    "description": "Write a test note to the run logs"
+  },
+  "Native pause": {
+    "prefix": "flow.pause",
+    "body": [
+      "flow.pause \"${1:Inspect the current form}\";"
+    ],
+    "description": "Pause an interactive run until resumed"
+  },
+  "Native pace": {
+    "prefix": "flow.pace",
+    "body": [
+      "flow.pace ${1:250};"
+    ],
+    "description": "Add a delay between browser actions in the scenario"
+  },
+  "Native press": {
+    "prefix": "flow.press",
+    "body": [
+      "flow.press \"${1:Enter}\" on input \"${2:Search}\";"
+    ],
+    "description": "Send a key or shortcut to a readable target"
+  },
+  "Native clear": {
+    "prefix": "flow.clear",
+    "body": [
+      "flow.clear input \"${1:Search}\";"
+    ],
+    "description": "Empty an editable control"
+  },
+  "Native focus": {
+    "prefix": "flow.focus",
+    "body": [
+      "flow.focus input \"${1:Search}\";"
+    ],
+    "description": "Focus a readable control"
+  },
+  "Native blur": {
+    "prefix": "flow.blur",
+    "body": [
+      "flow.blur input \"${1:Search}\";"
+    ],
+    "description": "Remove focus from a control"
+  },
+  "Native doubleClick": {
+    "prefix": "flow.doubleClick",
+    "body": [
+      "flow.doubleClick button \"${1:Invoice}\";"
+    ],
+    "description": "Double-click a readable target"
+  },
+  "Native rightClick": {
+    "prefix": "flow.rightClick",
+    "body": [
+      "flow.rightClick button \"${1:Invoice}\";"
+    ],
+    "description": "Right-click a readable target"
+  },
+  "Native goBack": {
+    "prefix": "flow.goBack",
+    "body": [
+      "flow.goBack;"
+    ],
+    "description": "Go back in browser history"
+  },
+  "Native goForward": {
+    "prefix": "flow.goForward",
+    "body": [
+      "flow.goForward;"
+    ],
+    "description": "Go forward in browser history"
+  },
+  "Native reload": {
+    "prefix": "flow.reload",
+    "body": [
+      "flow.reload;"
+    ],
+    "description": "Reload the active page"
+  },
+  "Native extract property": {
+    "prefix": "flow.extract property",
+    "body": [
+      "flow.extract property input \"${1:Email}\" inside \"${2:Checkout}\" \"${3:validity.typeMismatch}\" as \"${4:emailMismatch}\";"
+    ],
+    "description": "Store the browser property of a readable target"
+  },
+  "Native extract network": {
+    "prefix": "flow.extract network",
+    "body": [
+      "flow.extract network \"${1:orderResponse}\" \"${2:body.orderId}\" as \"${3:orderId}\";"
+    ],
+    "description": "Store a value from a named network capture"
+  },
+  "Scenario tags": {
+    "prefix": "Tags:",
+    "body": [
+      "Tags: ${1:smoke}, ${2:orders}"
+    ],
+    "description": "Set scenario tags immediately after the Scenario heading"
   }
 }

@@ -1,5 +1,9 @@
 export interface PayloadStart { line: number; character: number }
 
+const featureHeading = /^feature\s*:/i;
+const scenarioHeading = /^(?:only\.)?scenario\s*:/i;
+const tagsHeading = /^tags:/i;
+
 /** Inspect text only. Formatting and diagnostics must never execute workspace code. */
 export function inspectFlow(text: string) {
   const protectedLines = new Set<number>(), payloadStarts: PayloadStart[] = [];
@@ -8,7 +12,13 @@ export function inspectFlow(text: string) {
   const lines = text.split(/\r?\n/);
   for (let line = 0; line < lines.length; line++) {
     const value = lines[line];
-    if (jsonDepth || docString || blockComment || quoted) protectedLines.add(line);
+    if (jsonDepth || docString || blockComment || quoted) {
+      protectedLines.add(line);
+    } else {
+      const heading = value.trimStart();
+      // Heading titles and tag declarations are read as a whole line by the lexer.
+      if (featureHeading.test(heading) || scenarioHeading.test(heading) || tagsHeading.test(heading)) continue;
+    }
     for (let i = 0; i < value.length; i++) {
       const raw = value[i], c = /[“”]/.test(raw) ? '"' : raw;
       if (blockComment) {
@@ -48,7 +58,7 @@ export function inspectFlow(text: string) {
   return { lines, protectedLines, payloadStarts };
 }
 
-export function formatFlowLines(text: string, options: { tabSize?: number; insertSpaces?: boolean } = {}) {
+export function formatFlowLines(text: string, options: { tabSize?: number; insertSpaces?: boolean; fragment?: boolean } = {}) {
   const { lines, protectedLines } = inspectFlow(text);
   const size = Math.max(1, Math.min(8, Math.trunc(options.tabSize || 2)));
   const unit = options.insertSpaces === false ? '\t' : ' '.repeat(size);
@@ -56,9 +66,9 @@ export function formatFlowLines(text: string, options: { tabSize?: number; inser
   return lines.map((raw, index) => {
     if (protectedLines.has(index)) return raw;
     const line = raw.trim();
-    if (!line) return '';
-    if (/^feature\s*:/i.test(line)) depth = 0;
-    else if (/^(?:only\.)?scenario\s*:/i.test(line) || /^(?:stop\.)?(?:given|when|then|and)\b/i.test(line) || /^let\s/i.test(line)) depth = 1;
+    if (!line || options.fragment) return line;
+    if (featureHeading.test(line)) depth = 0;
+    else if (scenarioHeading.test(line) || tagsHeading.test(line) || /^(?:stop\.)?(?:given|when|then|and)\b/i.test(line) || /^let\s/i.test(line)) depth = 1;
     else if (!/^\/\//.test(line)) depth = 2;
     // Semicolons are optional in the DSL. Never guess where a command ends:
     // a line may open JSON, an API body, or a continued request-header block.

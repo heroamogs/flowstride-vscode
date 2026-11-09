@@ -13,6 +13,18 @@ test('formatting and diagnostics never import a project plugin or run its conten
 test('untrusted workspace cannot start a process from the run command', async () => {
   const {captures,messages} = editor('Feature: Untrusted'); await captures.run(); assert(messages.some(m=>/Trust/.test(m))); assert(!captures.task);
 });
+test('editor validation treats fragment calls as text without reading from the workspace', () => {
+  const { wrap } = require('./helpers/flows.cjs');
+  const original = fs.readFileSync;
+  fs.readFileSync = () => { throw new Error('Unexpected file access during validation'); };
+  try {
+    const source = wrap('flow.call "steps/customer.flowpart";');
+    assert.deepEqual(diagnoseFlow(source), []);
+    assert(formatFlowLines(source).join('\n').includes('flow.call "steps/customer.flowpart";'));
+  } finally {
+    fs.readFileSync = original;
+  }
+});
 test('malicious-looking JSON stays data and cannot pollute prototypes', () => {
   const source='Feature: Data\nScenario: Payload\nGiven "Open"\n flow.open "/";\nWhen "Data"\n flow.network.route {"name":"route","url":"**/data","json":{"__proto__":{"polluted":true},"constructor":{"prototype":{"polluted":true}},"value":"$(touch unsafe)"}};\nThen "Check"\n flow.expect visible "Ready";';
   assert.deepEqual(diagnoseFlow(source),[]); assert(formatFlowLines(source).join('\n').includes('"__proto__"')); assert.equal({}.polluted,undefined);

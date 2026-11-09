@@ -2,7 +2,7 @@
   "name": "flowstride-vscode",
   "displayName": "Flowstride Automation",
   "description": "Official VS Code extension for Flowstride. Includes syntax highlighting, error diagnostics, IntelliSense, and interactive test runner.",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "publisher": "flowstride",
   "icon": "images/logo.png",
   "engines": {
@@ -35,7 +35,8 @@
           "flow"
         ],
         "extensions": [
-          ".flow"
+          ".flow",
+          ".flowpart"
         ],
         "icon": {
           "light": "./images/flow-icon.svg",
@@ -68,7 +69,7 @@
       "editor/title": [
         {
           "command": "flowstride.runTest",
-          "when": "resourceLangId == flow",
+          "when": "resourceLangId == flow && resourceExtname == .flow",
           "group": "navigation"
         }
       ]

@@ -23,9 +23,12 @@
     "longitude": 3.3792
   },
   "assert.that": {
-    "selector": "h1",
-    "condition": "text",
-    "value": "Ready"
+    "target": {
+      "text": "Submit",
+      "element": "button",
+      "inside": "Checkout"
+    },
+    "condition": "enabled"
   },
   "network.route": {
     "name": "catalog",
@@ -119,5 +122,156 @@
       "label": "Continue"
     }
   },
-  "component.unmount": {}
+  "component.unmount": {},
+  "assert.value": {
+    "actual": "@quantity",
+    "operator": "equals",
+    "expected": 2,
+    "message": "The order has two items"
+  },
+  "input.type": {
+    "target": {
+      "text": "Search",
+      "element": "input",
+      "inside": "Customer search"
+    },
+    "text": " to Abuja",
+    "clear": false,
+    "delay": 25,
+    "blur": false
+  },
+  "scroll": {
+    "target": "Customer records",
+    "y": 240
+  },
+  "tab.name": {
+    "name": "main"
+  },
+  "tab.arm": {
+    "name": "receipt",
+    "timeout": 5000
+  },
+  "tab.use": {
+    "name": "receipt"
+  },
+  "tab.close": {
+    "name": "receipt"
+  },
+  "frame.use": {
+    "target": {
+      "text": "Delivery details",
+      "element": "iframe"
+    }
+  },
+  "frame.main": {},
+  "dialog.arm": {
+    "name": "rename-order",
+    "action": "accept",
+    "promptText": "Office supplies",
+    "timeout": 5000
+  },
+  "dialog.expect": {
+    "name": "rename-order",
+    "type": "prompt",
+    "message": "Enter order name"
+  },
+  "files.select": {
+    "target": {
+      "text": "Attach documents",
+      "element": "input"
+    },
+    "files": [
+      "fixtures/invoice.txt",
+      "fixtures/receipt.txt"
+    ]
+  },
+  "data.load": {
+    "file": "fixtures/customer.json",
+    "as": "customer"
+  },
+  "data.cases": {
+    "file": "fixtures/customers.json"
+  },
+  "data.seed": "customer-signup-regression",
+  "file.read": {
+    "file": "fixtures/customers.csv",
+    "format": "csv",
+    "as": "customers"
+  },
+  "call": "steps/customer.flowpart",
+  "cleanup.register": {
+    "method": "DELETE",
+    "url": "/api/orders/@orderId"
+  },
+  "skipIf": {
+    "browser": "webkit",
+    "reason": "This scenario requires Chromium microphone injection"
+  },
+  "api.request": {
+    "method": "POST",
+    "url": "/api/documents",
+    "multipart": {
+      "description": "Test document",
+      "file": {
+        "path": "fixtures/document.pdf",
+        "contentType": "application/pdf"
+      }
+    },
+    "timeout": 15000
+  },
+  "api.create": {
+    "name": "administrator",
+    "baseUrl": "{{env.API_URL}}",
+    "cookies": true
+  },
+  "api.use": {
+    "name": "administrator"
+  },
+  "api.close": {
+    "name": "administrator"
+  },
+  "api.expectSchema": {
+    "file": "fixtures/order.schema.json"
+  },
+  "api.poll": {
+    "url": "/api/jobs/@jobId",
+    "path": "status",
+    "equals": "completed",
+    "interval": 500,
+    "timeout": 15000
+  },
+  "console.arm": {
+    "name": "save-message",
+    "level": "info",
+    "contains": "Customer saved"
+  },
+  "console.expect": {
+    "name": "save-message",
+    "timeout": 5000
+  },
+  "channel.arm": {
+    "name": "order-updates",
+    "protocol": "websocket",
+    "url": "**/orders/socket"
+  },
+  "channel.expect": {
+    "name": "order-updates",
+    "path": "event",
+    "equals": "order.updated"
+  },
+  "visual.capture": {
+    "name": "order-summary",
+    "target": {
+      "text": "Order summary",
+      "inside": "Checkout"
+    }
+  },
+  "visual.match": {
+    "target": {
+      "text": "Order summary",
+      "inside": "Checkout"
+    },
+    "baseline": "baselines/order-summary.png",
+    "maxDiffRatio": 0.01
+  }
 }

@@ -1,9 +1,15 @@
+# Changelog
+
+## 1.0.6
+
+- Support the new browser, API, data and evidence commands in formatting, diagnostics, completions, snippets and highlighting.
+- Enforce one Feature per file and a terminal Then per scenario. Keep intermediate assertion-only And blocks valid.
+- Format and validate reusable command fragments and recognize scenario tags.
+
 ## 1.0.5
 
 - Align assertion diagnostics with OS and Cloud: native assertion commands work under `And`, including after `Then`.
 - Preserve restrictions on state-changing commands under `And`.
-
-# Changelog
 
 ## 1.0.4
 

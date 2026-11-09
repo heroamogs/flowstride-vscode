@@ -63,6 +63,14 @@
           }
         },
         {
+          "match": "(?i)^\\s*(Tags)(:)(.*)$",
+          "captures": {
+            "1": { "name": "keyword.declaration.flow" },
+            "2": { "name": "punctuation.separator.flow" },
+            "3": { "name": "entity.name.tag.flow" }
+          }
+        },
+        {
           "match": "\\b(stop\\.)(Given|When|Then|And)\\b",
           "captures": {
             "1": {
@@ -86,19 +94,26 @@
     "commands": {
       "patterns": [
         {
-          "match": "\\bflow\\.(browser|assert|network|download|clock|stub|trace|har|a11y|component)\\.[a-zA-Z]+\\b",
+          "match": "\\bflow\\.(?:(?:browser|assert|network|download|clock|stub|trace|har|a11y|component|input|tab|frame|dialog|files|data|file|cleanup|api|console|channel|visual)\\.[a-zA-Z]+|skipIf|call|scroll)\\b",
           "name": "support.function.flow"
+        },
+        {
+          "match": "\\b(flow\\.soft)([ \\t]+)(expect|assert\\.(?:that|value)|(?:dialog|network|download|stub|console|channel)\\.expect|a11y\\.(?:scan|match)|api\\.expectSchema|visual\\.match)\\b",
+          "captures": {
+            "1": { "name": "keyword.operator.logical.flow" },
+            "3": { "name": "support.function.flow" }
+          }
         },
         {
           "match": "\\b(flow\\.[a-zA-Z0-9_.]+)\\b",
           "name": "entity.name.function.flow"
         },
         {
-          "match": "\\b(extract|hover|resBody|resHeader|reqBody|reqHeader|cookie|status|visible|text|value|attribute|transcript)\\b",
+          "match": "\\b(extract|hover|resBody|resHeader|reqBody|reqHeader|cookie|status|visible|text|value|attribute|property|network|transcript)\\b",
           "name": "support.constant.flow"
         },
         {
-          "match": "\\b(button|link|a|input|field|div|span|image|img|burger|hamburger)\\b",
+          "match": "\\b(button|link|a|input|field|div|span|image|img|burger|hamburger|iframe|table|tr|th|td)\\b",
           "name": "entity.name.tag.flow"
         },
         {
@@ -106,7 +121,7 @@
           "name": "keyword.operator.spatial.flow"
         },
         {
-          "match": "\\b(into|with|as|equals|lessThan|greaterThan|via|to\\.be|to\\.not\\.be|is|is\\.not|type\\.of|format|matches|length|includes|does\\.not\\.include|has\\.key|does\\.not\\.have\\.key|is\\.empty|not\\.empty)\\b",
+          "match": "\\b(into|with|as|on|equals|lessThan|greaterThan|via|to\\.be|to\\.not\\.be|is|is\\.not|type\\.of|format|matches|length|includes|does\\.not\\.include|has\\.key|does\\.not\\.have\\.key|is\\.empty|not\\.empty)\\b",
           "name": "keyword.operator.logical.flow"
         },
         {

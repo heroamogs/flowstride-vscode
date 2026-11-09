@@ -1,11 +1,25 @@
 import { locateRunner } from "./runner";
 import { diagnoseFlow } from "./language/diagnostics";
 import { formatFlowLines } from "./language/formatter";
-import { nativeCommands, gameCommands } from "./language/catalog";
+import { nativeAssertionCommands } from "./language/assertion_contract";
+import { nativeCommands, gameCommands, keywordCommands } from "./language/catalog";
 import * as vscode from "vscode";
 
 const diagnosticCollection =
   vscode.languages.createDiagnosticCollection("flowstride");
+
+function commandCompletions(names: readonly string[], position: vscode.Position, prefix: string, detail: string) {
+  return names.filter(name => name.toLowerCase().startsWith(prefix.toLowerCase())).map(name => {
+    const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Method);
+    item.detail = detail;
+    item.range = new vscode.Range(position.line, position.character - prefix.length, position.line, position.character);
+    return item;
+  });
+}
+
+function isFragment(document: vscode.TextDocument) {
+  return document.uri.fsPath.endsWith('.flowpart');
+}
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
@@ -15,6 +29,10 @@ export function activate(context: vscode.ExtensionContext) {
         if (!vscode.workspace.isTrusted) { vscode.window.showWarningMessage('Trust this workspace before running Flowstride.'); return; }
         const fileUri = uri || vscode.window.activeTextEditor?.document.uri;
         if (!fileUri || fileUri.scheme !== 'file') { vscode.window.showErrorMessage('Choose a local Flowstride file.'); return; }
+        if (fileUri.fsPath.endsWith('.flowpart')) {
+          vscode.window.showErrorMessage('Run a .flow file that includes this fragment with flow.call.');
+          return;
+        }
         const folder = vscode.workspace.getWorkspaceFolder(fileUri);
         if (!folder) { vscode.window.showErrorMessage('Open the project as a workspace first.'); return; }
         const document = vscode.workspace.textDocuments.find(doc=>doc.uri.toString()===fileUri.toString());
@@ -28,8 +46,6 @@ export function activate(context: vscode.ExtensionContext) {
       },
     ),
   );
-
-  const completionCommands = ["acceptDialog", "autoheal", "check", "click", "close", "delete", "drag", "expect", "extract", "forceClick", "forceType", "get", "graphql", "hover", "injectAudio", "mail.getotp", "open", "passcode", "patch", "post", "put", "rejectDialog", "save", "select", "set", "switchTo", "try", "type", "uncheck", "upload", "use", "waitForPipeline"];
 
   const dataGenerators = [
     {
@@ -106,40 +122,46 @@ export function activate(context: vscode.ExtensionContext) {
             .text.substr(0, position.character);
           const items: vscode.CompletionItem[] = [];
 
-          const gameAliases = [...document.getText().matchAll(/\blet\s+(\w+)\s*=\s*["']flowstride:game["']/g)].map(match=>match[1]);
-          const alias = linePrefix.match(/([A-Za-z_]\w*)\.$/)?.[1];
-          if (alias && gameAliases.includes(alias)) {
-            return gameCommands.map(action=>{
-              const item=new vscode.CompletionItem(action,vscode.CompletionItemKind.Method);
-              item.detail='Native Flowstride game action';return item;
-            });
+          const soft = linePrefix.match(/\bflow\.soft\s+(?:([a-z][a-z0-9]*)\.)?([a-zA-Z0-9]*)$/);
+          if (soft) {
+            const [, area, prefix] = soft;
+            const assertions = [...nativeAssertionCommands];
+            const names = area
+              ? assertions.filter(name => name.startsWith(area + '.')).map(name => name.slice(area.length + 1))
+              : ['expect', ...new Set(assertions.map(name => name.split('.')[0]))];
+            return commandCompletions(names, position, prefix, 'Built-in Flowstride assertion');
           }
 
-          const native = nativeCommands;
-          const nativeArea = linePrefix.match(/flow\.([a-z][a-z0-9]*)\.$/)?.[1];
-          if (nativeArea && native[nativeArea]) return native[nativeArea].map(action => {
-            const item = new vscode.CompletionItem(action,vscode.CompletionItemKind.Method);
-            item.detail = 'Native Flowstride browser capability'; return item;
-          });
-          if (linePrefix.endsWith('flow.')) for (const area of Object.keys(native)) {
-            const item = new vscode.CompletionItem(area,vscode.CompletionItemKind.Method);
-            item.detail = 'Native Flowstride command group'; items.push(item);
+          const extract = linePrefix.match(/\bflow\.extract\s+([a-zA-Z]*)$/);
+          if (extract) {
+            return commandCompletions(
+              ['resBody', 'resHeader', 'cookie', 'text', 'value', 'attribute', 'property', 'network'],
+              position, extract[1], 'Flowstride extraction source',
+            );
           }
 
-          // 1. Actions (flow.)
-          if (linePrefix.endsWith("flow.")) {
-            completionCommands.forEach((cmd) => {
-              const item = new vscode.CompletionItem(
-                cmd,
-                vscode.CompletionItemKind.Method,
-              );
-              item.detail = "Flowstride command";
-              items.push(item);
-            });
-            return items;
+          const flow = linePrefix.match(/\bflow\.(?:([a-z][a-z0-9]*)\.)?([a-zA-Z0-9]*)$/);
+          if (flow) {
+            const [, area, prefix] = flow;
+            if (!area) {
+              const commands = keywordCommands.filter(name => !isFragment(document) || name !== 'skipIf');
+              return commandCompletions([...Object.keys(nativeCommands), ...commands], position, prefix, 'Flowstride command');
+            }
+            if (Object.hasOwn(nativeCommands, area)) {
+              const commands = nativeCommands[area].filter(name => !isFragment(document) || area !== 'data' || name !== 'cases');
+              return commandCompletions(commands, position, prefix, 'Native Flowstride command');
+            }
+            if (area === 'mail') return commandCompletions(['getotp'], position, prefix, 'Flowstride command');
           }
 
-          // 2. Data Generators & Memory Scanner
+          const plugin = linePrefix.match(/\b([A-Za-z_]\w*)\.([a-zA-Z]*)$/);
+          if (plugin) {
+            const [, alias, prefix] = plugin;
+            const gameAliases = [...document.getText().matchAll(/\blet\s+(\w+)\s*=\s*["']flowstride:game["']/g)].map(match => match[1]);
+            if (gameAliases.includes(alias)) return commandCompletions(gameCommands, position, prefix, 'Native Flowstride game action');
+          }
+
+          // Data generators and remembered values.
           const genMatch = linePrefix.match(/([$@{])([A-Za-z0-9_\[\]]*)$/);
           if (genMatch) {
             const prefixChar = genMatch[1];
@@ -193,14 +215,15 @@ export function activate(context: vscode.ExtensionContext) {
       ".",
       "$",
       "{",
-      "@", // Master triggers
+      "@",
+      " ",
     ),
   );
 
   context.subscriptions.push(
     vscode.languages.registerDocumentFormattingEditProvider("flow", {
       provideDocumentFormattingEdits(document, options) {
-        const lines = formatFlowLines(document.getText(), options);
+        const lines = formatFlowLines(document.getText(), { ...options, fragment: isFragment(document) });
         return lines.flatMap((line, index) => {
           const original = document.lineAt(index);
           return original.text === line ? [] : [vscode.TextEdit.replace(original.range, line)];
@@ -242,7 +265,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 function updateDiagnostics(document: vscode.TextDocument) {
   if (document.languageId !== 'flow') return;
-  const diagnostics = diagnoseFlow(document.getText()).map(item => {
+  const diagnostics = diagnoseFlow(document.getText(), isFragment(document)).map(item => {
     const line = Math.min(item.line, document.lineCount - 1);
     const range = item.character === undefined ? document.lineAt(line).range : new vscode.Range(line, item.character, line, item.character + 1);
     const diagnostic = new vscode.Diagnostic(range, item.message, vscode.DiagnosticSeverity.Error);
