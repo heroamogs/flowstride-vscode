@@ -8,7 +8,7 @@
 
 ## 1.0.5
 
-- Align assertion diagnostics with OS and Cloud: native assertion commands work under `And`, including after `Then`.
+- Align assertion diagnostics with both engines. In this release, native assertion commands worked under `And`, including after `Then`.
 - Preserve restrictions on state-changing commands under `And`.
 
 ## 1.0.4
