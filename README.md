@@ -1,10 +1,12 @@
 # Flowstride for VS Code
 
-Write, format and run `.flow` tests using the same language in OS and Cloud.
+Write, format and run `.flow` tests with the open-source engine or a Flowstride Cloud account.
 
 ## Get started
 
-Install **Flowstride Automation** from the VS Code Marketplace. In your test project, install and initialize Flowstride:
+Open **Extensions** in VS Code, search for **Flowstride Automation**, and select **Install**. [Flowstride Automation on the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=flowstride.flowstride-vscode)
+
+Install and initialize Flowstride in your test project.
 
 ```sh
 npm i flowstride
@@ -12,7 +14,7 @@ npx flowstride init
 npx flowstride install chromium
 ```
 
-Open the project folder in VS Code and create a `.flow` file. Configure your application's `BASE_URL` in the project's `.env` and use your application's actual targets and expected results. OS works locally without an account. Cloud offers free accounts and connects through `npx flowstride login`; feature availability depends on workspace access and usage allowances.
+Open the project folder in VS Code and create a `.flow` file. Configure your application's `BASE_URL` in the project's `.env` and use your application's actual targets and expected results. Flowstride works locally without an account. Cloud offers free accounts and connects through `npx flowstride login`; feature availability depends on workspace access and usage allowances.
 
 ## Formatting and diagnostics
 
