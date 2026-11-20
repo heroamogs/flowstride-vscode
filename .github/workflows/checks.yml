@@ -23,8 +23,8 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          repository: heroamogs/flowstride-os
-          ref: cacbe68c40c6f5e4d263b3efd0e7988869c372fe
+          repository: heroamogs/flowstride
+          ref: 8fec04c75e30554171b2ddb549e6f85830c0f7cc
           path: .engine-os
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
@@ -37,7 +37,12 @@ jobs:
         run: npm run test:unit
       - name: Security regression
         run: npm run test:security
-      - name: Compare against the public OS parser and examples
+      - name: Build the Flowstride 2.0 reference parser
+        working-directory: .engine-os
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+      - name: Compare against the Flowstride 2.0 parser and examples
         env:
           FLOWSTRIDE_OS_ROOT: ${{ github.workspace }}/.engine-os
         run: npm run test:parity

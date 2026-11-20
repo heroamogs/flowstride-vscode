@@ -8,6 +8,7 @@ function editor(source, filename = '/virtual/flows/example.flow') {
     languages: {
       createDiagnosticCollection: () => ({ set: (_uri, items) => captures.diagnostics = items, clear() {} }),
       registerCompletionItemProvider: (_language, provider) => { captures.completion = provider; return disposable; },
+      registerDefinitionProvider: (_language, provider) => { captures.definition = provider; return disposable; },
       registerDocumentFormattingEditProvider: (_language, provider) => { captures.formatter = provider; return disposable; },
       registerCodeActionsProvider: (_language, provider) => { captures.fixes = provider; return disposable; },
     },

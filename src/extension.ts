@@ -2,7 +2,9 @@ import { locateRunner } from "./runner";
 import { diagnoseFlow } from "./language/diagnostics";
 import { formatFlowLines } from "./language/formatter";
 import { nativeAssertionCommands } from "./language/assertion_contract";
-import { nativeCommands, gameCommands, keywordCommands } from "./language/catalog";
+import { nativeCommands, gameCommands, keywordCommands, workflowCommands } from "./language/catalog";
+import { featureHelpers, helperAt } from "./language/workflow";
+import { findNamedExport, resolveDefinitionFile } from "./language/helper_definition";
 import * as vscode from "vscode";
 
 const diagnosticCollection =
@@ -122,6 +124,12 @@ export function activate(context: vscode.ExtensionContext) {
             .text.substr(0, position.character);
           const items: vscode.CompletionItem[] = [];
 
+          const helper = linePrefix.match(/\bflow\.(?:call|fixture\.(?:use|worker))[ \t]+([A-Za-z_$][\w$]*|)$/i);
+          if (helper && !isFragment(document)) {
+            const names = featureHelpers(document.getText()).map(binding => binding.alias);
+            return commandCompletions(names, position, helper[1], 'Imported Flowstride helper');
+          }
+
           const soft = linePrefix.match(/\bflow\.soft\s+(?:([a-z][a-z0-9]*)\.)?([a-zA-Z0-9]*)$/);
           if (soft) {
             const [, area, prefix] = soft;
@@ -145,11 +153,15 @@ export function activate(context: vscode.ExtensionContext) {
             const [, area, prefix] = flow;
             if (!area) {
               const commands = keywordCommands.filter(name => !isFragment(document) || name !== 'skipIf');
-              return commandCompletions([...Object.keys(nativeCommands), ...commands], position, prefix, 'Flowstride command');
+              const groups = isFragment(document) ? [] : Object.keys(workflowCommands);
+              return commandCompletions([...Object.keys(nativeCommands), ...groups, ...commands], position, prefix, 'Flowstride command');
             }
             if (Object.hasOwn(nativeCommands, area)) {
               const commands = nativeCommands[area].filter(name => !isFragment(document) || area !== 'data' || name !== 'cases');
               return commandCompletions(commands, position, prefix, 'Native Flowstride command');
+            }
+            if (!isFragment(document) && Object.hasOwn(workflowCommands, area)) {
+              return commandCompletions(workflowCommands[area], position, prefix, 'Flowstride workflow command');
             }
             if (area === 'mail') return commandCompletions(['getotp'], position, prefix, 'Flowstride command');
           }
@@ -218,6 +230,30 @@ export function activate(context: vscode.ExtensionContext) {
       "@",
       " ",
     ),
+  );
+
+  context.subscriptions.push(
+    vscode.languages.registerDefinitionProvider({ language: 'flow', scheme: 'file' }, {
+      async provideDefinition(document, position, token) {
+        if (!vscode.workspace.isTrusted || isFragment(document) || token.isCancellationRequested) return;
+        const folder = vscode.workspace.getWorkspaceFolder(document.uri);
+        if (!folder) return;
+        const binding = helperAt(document.getText(), position.line, position.character);
+        if (!binding) return;
+        try {
+          const file = resolveDefinitionFile(document.uri.fsPath, folder.uri.fsPath, binding);
+          const uri = vscode.Uri.file(file);
+          const helper = await vscode.workspace.openTextDocument(uri);
+          if (token.isCancellationRequested) return;
+          const range = await findNamedExport(file, helper.getText(), binding.alias);
+          if (range && !token.isCancellationRequested) {
+            return new vscode.Location(uri, new vscode.Range(helper.positionAt(range.start), helper.positionAt(range.end)));
+          }
+        } catch {
+          // An unresolved import does not open another file or run any code.
+        }
+      },
+    }),
   );
 
   context.subscriptions.push(

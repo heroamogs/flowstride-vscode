@@ -26,7 +26,16 @@ exports.run=async()=>{
   const edits=await vscode.commands.executeCommand('vscode.executeFormatDocumentProvider',document.uri,{tabSize:2,insertSpaces:true});
   console.log(JSON.stringify({language:document.languageId,formatOnSave:vscode.workspace.getConfiguration('editor',document).get('formatOnSave'),formatter:vscode.workspace.getConfiguration('editor',document).get('defaultFormatter'),formatEdits:edits?.length}));
   assert(edits?.length,'Real formatter must return document edits');
-  await vscode.commands.executeCommand('workbench.action.files.save');assert(!document.isDirty);
+  // The workbench registers its save participants asynchronously on a cold start.
+  await wait(async () => {
+    if (!document.isDirty) {
+      const touch = new vscode.WorkspaceEdit();
+      touch.insert(document.uri, new vscode.Position(0, 0), ' ');
+      await vscode.workspace.applyEdit(touch);
+    }
+    await vscode.commands.executeCommand('workbench.action.files.save');
+    return !document.isDirty && fs.readFileSync(filename, 'utf8').startsWith('Feature:');
+  }, 'format on save in the workbench');
   const saved=fs.readFileSync(filename,'utf8');assert(!saved.includes('{;'));assert.deepEqual(parse(saved),parse(before));
   assert(saved.startsWith('Feature:'));await wait(()=>diagnostics(document.uri).length===0,'valid batch commands and tags');
 
@@ -70,6 +79,80 @@ exports.run=async()=>{
   const gameDoc=await vscode.workspace.openTextDocument(gameFile),line=gameDoc.lineCount-1;
   const result=await vscode.commands.executeCommand('vscode.executeCompletionItemProvider',gameDoc.uri,new vscode.Position(line,gameDoc.lineAt(line).text.length),'.');
   const labels=result.items.map(item=>typeof item.label==='string'?item.label:item.label.label);for(const action of gameCommands)assert(labels.includes(action),action);
-  const evidence={status:'passed',extensionVersion:extension.packageJSON.version,vscodeVersion:vscode.version,nativeCommands:Object.keys(fixtures).length,completionGroups:groups,gameCompletions:gameCommands.length,formatOnSave:'passed',possessiveTitle:'passed',quickFix:'passed',terminalThen:'passed',fragmentEditing:'passed'};
+  const practice = {};
+  for (const folder of ['open', 'pro']) {
+    const project = process.env['FLOWSTRIDE_EDITOR_INSTALL_' + folder.toUpperCase()];
+    if (!project) continue;
+    const advanced = path.join(project, 'flows/examples/advanced');
+    for (const name of ['admin-creates-user.flow', 'check-catalog-prices.flow', 'new-user-signs-in.flow']) {
+      const doc = await vscode.workspace.openTextDocument(path.join(advanced, name));
+      assert.equal(doc.languageId, 'flow');
+      await wait(() => diagnostics(doc.uri).length === 0, 'practice example ' + name);
+    }
+    const admin = await vscode.workspace.openTextDocument(path.join(advanced, 'admin-creates-user.flow'));
+    const lines = admin.getText().split(/\r?\n/);
+    for (const pattern of [/^import .*preparePracticeUser/, /flow\.fixture\.use preparePracticeUser/]) {
+      const line = lines.findIndex(value => pattern.test(value));
+      assert(line >= 0);
+      const locations = await vscode.commands.executeCommand('vscode.executeDefinitionProvider',
+        admin.uri, new vscode.Position(line, lines[line].indexOf('preparePracticeUser') + 2));
+      assert.equal(locations.length, 1);
+      const expected = path.join(project, 'helpers/practice/user-fixtures.ts');
+      assert.equal(fs.realpathSync(locations[0].uri.fsPath), fs.realpathSync(expected));
+      const helper = await vscode.workspace.openTextDocument(locations[0].uri);
+      assert.equal(helper.getText(locations[0].range), 'preparePracticeUser');
+    }
+    const catalog = await vscode.workspace.openTextDocument(path.join(advanced, 'check-catalog-prices.flow'));
+    const call = catalog.getText().split(/\r?\n/).findIndex(text => text.includes('flow.call checkCatalogPrices('));
+    assert(call >= 0);
+    const position = new vscode.Position(call, catalog.lineAt(call).text.indexOf('checkCatalogPrices') + 3);
+    const definitions = await vscode.commands.executeCommand('vscode.executeDefinitionProvider', catalog.uri, position);
+    assert.equal(definitions.length, 1);
+    assert.equal(fs.realpathSync(definitions[0].uri.fsPath), fs.realpathSync(path.join(project, 'helpers/practice/catalog.ts')));
+    practice[folder] = 'advanced flows, fixture and catalog helper definitions passed';
+  }
+  const helperDir = path.join(root, 'helpers');
+  fs.mkdirSync(helperDir, {recursive:true});
+  const jsFile = path.join(helperDir, 'prices.js');
+  fs.writeFileSync(jsFile, 'exports.expectedPrices = cars => cars.map(car => car.price);\n');
+  const priceFlow = path.join(root, 'prices.flow');
+  const priceSource = [
+    'Feature: Compare catalog prices', 'import { expectedPrices } from "prices.js";',
+    'Scenario: Read prices from the catalog', 'Given "Request the catalog"',
+    '  flow.get "/api/cars";', '  flow.extract resBody "cars" as "cars";',
+    'When "Read expected prices"', '  flow.call expectedPrices("@cars") as "expected";',
+    'Then "Check the first price"', '  flow.assert.value {"actual":"@expected[0]","operator":"equals","expected":20};',
+  ];
+  fs.writeFileSync(priceFlow, priceSource.join('\n'));
+  const prices = await vscode.workspace.openTextDocument(priceFlow);
+  await vscode.window.showTextDocument(prices);
+  assert.deepEqual(diagnostics(prices.uri), []);
+  const callLine = priceSource.indexOf('  flow.call expectedPrices("@cars") as "expected";');
+  const prefixEnd = priceSource[callLine].indexOf('expectedPrices') + 3;
+  const wordPosition = new vscode.Position(callLine, prefixEnd);
+  const suggestions = await vscode.commands.executeCommand('vscode.executeCompletionItemProvider', prices.uri, wordPosition);
+  assert(suggestions.items.some(item => item.label === 'expectedPrices'));
+  const jsDefinition = await vscode.commands.executeCommand('vscode.executeDefinitionProvider', prices.uri, wordPosition);
+  assert.equal(jsDefinition.length, 1);
+  assert.equal(fs.realpathSync(jsDefinition[0].uri.fsPath), fs.realpathSync(jsFile));
+  if (process.env.FLOWSTRIDE_EDITOR_RUN_TEST) {
+    const file = path.join(process.env.FLOWSTRIDE_EDITOR_INSTALL_OPEN, 'flows/examples/advanced/check-catalog-prices.flow');
+    const finished = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        listener.dispose();
+        reject(new Error('Run Test did not finish the catalog flow'));
+      }, 90000);
+      const listener = vscode.tasks.onDidEndTaskProcess(event => {
+        if (event.execution.task.definition.file !== file) return;
+        clearTimeout(timeout);
+        listener.dispose();
+        resolve(event.exitCode);
+      });
+    });
+    await vscode.commands.executeCommand('flowstride.runTest', vscode.Uri.file(file));
+    assert.equal(await finished, 0, 'The installed project CLI must pass the catalog flow');
+    practice.runner = 'Run Test passed the 50-car catalog flow';
+  }
+  const evidence={status:'passed',extensionVersion:extension.packageJSON.version,vscodeVersion:vscode.version,nativeCommands:Object.keys(fixtures).length,completionGroups:groups,gameCompletions:gameCommands.length,formatOnSave:'passed',possessiveTitle:'passed',quickFix:'passed',terminalThen:'passed',fragmentEditing:'passed',practice};
   fs.writeFileSync(path.join(root,'host-results.json'),JSON.stringify(evidence,null,2)+'\n');console.log(JSON.stringify(evidence));
 };

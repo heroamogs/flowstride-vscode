@@ -1,3 +1,4 @@
+import { handoffPattern, parseHandoff, variableName } from './shared/workflow_contract';
 import { workflowTags } from './workflow_tags';
 import { validateKey } from './keyboard';
 import { validateExpectationType, validateResponseTimeThreshold, isAssertionStep, isSoftAssertionStep, isControlDurationTemplate, validateControlDuration, validateControlMessage } from './assertion_contract';
@@ -7,6 +8,18 @@ export interface DeclarationNode {
   alias: string;
   path: string;
   line: number;
+  kind?: 'helper';
+}
+
+export interface HelperCallPayload {
+  name: string;
+  args: unknown[];
+  usePage: boolean;
+  capture?: { name: string; isGlobal: boolean };
+}
+
+export interface FixtureCallPayload extends HelperCallPayload {
+  scope: NonNullable<Token['fixtureScope']>;
 }
 
 export interface StepNode {
@@ -67,6 +80,15 @@ export class Parser {
         } else {
           featureDeclarations.push(this.parseDeclaration());
         }
+      } else if (token.type === TokenType.IMPORT) {
+        for (const binding of this.parseHelperImport()) {
+          if (featureDeclarations.some(item => item.kind === 'helper' && item.alias === binding.alias)) {
+            throw new Error(`Line ${binding.line}: Helper "${binding.alias}" is already imported.`);
+          }
+          featureDeclarations.push(binding);
+        }
+      } else if (token.type === TokenType.HELPER_CALL) {
+        throw new Error(`Line ${token.line}: Call helpers inside a scenario block.`);
       } else if (token.type === TokenType.FEATURE) {
         if (currentFeatureName !== null) {
           throw new Error(`Line ${token.line}: A test file can contain only one Feature declaration.`);
@@ -102,8 +124,12 @@ export class Parser {
     const steps: StepNode[] = [];
     while (!this.isAtEnd()) {
       const token = this.peek();
-      if (token.type !== TokenType.COMMAND && token.type !== TokenType.ALIAS_COMMAND) {
+      if (token.type !== TokenType.COMMAND && token.type !== TokenType.ALIAS_COMMAND && token.type !== TokenType.HELPER_CALL) {
         throw new Error(`Line ${token.line}: A .flowpart file contains commands only.`);
+      }
+      if (token.fixtureScope) throw new Error('Line ' + token.line + ': Declare fixtures in the Given block of a scenario.');
+      if (handoffPattern.test(token.value) && token.type === TokenType.ALIAS_COMMAND) {
+        throw new Error('Line ' + token.line + ': Declare handoff commands directly inside a scenario.');
       }
       steps.push(this.parseCommand());
     }
@@ -128,6 +154,20 @@ export class Parser {
       path: pathToken.value,
       line: letToken.line,
     };
+  }
+
+  private parseHelperImport(): DeclarationNode[] {
+    const { line } = this.advance();
+    const binding = this.consume(TokenType.JSON_PAYLOAD, "Expected named helper imports in braces");
+    const names = binding.value.slice(1, -1).split(',').map(name => name.trim());
+    if (names.some(name => !/^[A-Za-z_$][\w$]*$/.test(name))) {
+      throw new Error(`Line ${line}: Helper imports require named functions separated by commas.`);
+    }
+    const from = this.consume(TokenType.PREPOSITION, "Expected 'from' after helper imports");
+    if (from.value.toLowerCase() !== 'from') throw new Error(`Line ${from.line}: Expected 'from' after helper imports.`);
+    const file = this.consume(TokenType.STRING, 'Expected a quoted helper filename');
+    if (!/\.(js|ts)$/.test(file.value)) throw new Error(`Line ${file.line}: Helper imports require a .js or .ts filename.`);
+    return names.map(alias => ({ alias, path: file.value, line, kind: 'helper' }));
   }
 
   private parseScenario(): ScenarioNode {
@@ -183,6 +223,8 @@ export class Parser {
         if (isLocked)
           throw new Error(`Line ${token.line}: Terminal Lock Violation. No steps allowed after Then.`);
         declarations.push(this.parseDeclaration());
+      } else if (token.type === TokenType.IMPORT) {
+        throw new Error(`Line ${token.line}: Import helpers under Feature, before the first Scenario.`);
       } else if (token.type === TokenType.BLOCK) {
         if (isLocked)
           throw new Error(
@@ -243,12 +285,21 @@ export class Parser {
           : displayBlockName;
       } else if (
         token.type === TokenType.COMMAND ||
-        token.type === TokenType.ALIAS_COMMAND
+        token.type === TokenType.ALIAS_COMMAND || token.type === TokenType.HELPER_CALL
       ) {
         if (isLocked && currentBlockType !== "then") {
           throw new Error(`Line ${token.line}: Terminal Lock Violation.`);
         }
+        if (token.type === TokenType.HELPER_CALL && state === 'START') {
+          throw new Error(`Line ${token.line}: Call helpers inside a scenario block.`);
+        }
+        if (token.fixtureScope && currentBlockType !== 'given') {
+          throw new Error('Line ' + token.line + ': Declare fixtures in the Given block of a scenario.');
+        }
         const step = this.parseCommand();
+        if (step.action === 'handoff' && step.payload.kind === 'receive' && currentBlockType !== 'given') {
+          throw new Error('Line ' + token.line + ': Use flow.handoff.receive in Given.');
+        }
 
         if (this.currentBlockIsStop) {
           step.isStop = true;
@@ -352,6 +403,44 @@ export class Parser {
   private parseCommand(): StepNode {
     const commandToken = this.advance();
 
+    if (commandToken.type === TokenType.HELPER_CALL) {
+      const input = commandToken.helperArguments!.trim();
+      const scope = commandToken.fixtureScope;
+      const usePage = /^page(?=\s*(?:,|$))/.test(input);
+      if (scope && usePage) throw new Error('Line ' + commandToken.line + ': Fixtures receive a context automatically. Declare a named browser profile to use a page.');
+      let args: unknown[];
+      try {
+        args = JSON.parse('[' + (usePage ? 'null' + input.slice(4) : input) + ']');
+      } catch {
+        if (scope) throw new Error('Line ' + commandToken.line + ': Fixture arguments must be JSON values.');
+        throw new Error(`Line ${commandToken.line}: Helper arguments must be JSON values, with 'page' allowed as the first argument.`);
+      }
+      const payload: HelperCallPayload | FixtureCallPayload = {
+        name: commandToken.value,
+        args: usePage ? args.slice(1) : args,
+        usePage,
+        ...(scope && { scope }),
+      };
+      if (this.peek().type === TokenType.PREPOSITION && this.peek().value.toLowerCase() === 'as') {
+        this.advance();
+        const isGlobal = this.peek().type === TokenType.MODIFIER && this.peek().value.toLowerCase() === 'global';
+        if (scope && isGlobal) throw new Error('Line ' + commandToken.line + ': Fixture results are scoped to the current scenario attempt. Use as followed by a name.');
+        if (isGlobal) this.advance();
+        const name = this.consume(TokenType.STRING, 'Expected a quoted variable name after as');
+        if (!variableName.safeParse(name.value).success) {
+          throw new Error(`Line ${name.line}: Helper capture requires a safe variable name of 1–128 characters.`);
+        }
+        payload.capture = { name: name.value, isGlobal };
+      }
+      return {
+        id: `scenario_${this.scenarioCounter}_S${this.stepCounter++}`,
+        blockDescription: this.currentBlockDescription,
+        action: scope ? 'fixture' : 'helper',
+        payload,
+        line: commandToken.line,
+      };
+    }
+
     if (commandToken.value.toLowerCase() === 'flow.soft') {
       const next = this.peek();
       if (next.type !== TokenType.COMMAND && next.type !== TokenType.ALIAS_COMMAND ||
@@ -368,6 +457,21 @@ export class Parser {
     }
 
     if (commandToken.type === TokenType.ALIAS_COMMAND) {
+      if (/^flow\.handoff\./i.test(commandToken.value)) {
+        if (!handoffPattern.test(commandToken.value)) throw new Error('Unknown handoff command on line ' + commandToken.line + '.');
+        let input: unknown;
+        if (this.peek().type === TokenType.JSON_PAYLOAD) {
+          try { input = JSON.parse(this.advance().value); }
+          catch { throw new Error('Invalid handoff JSON on line ' + commandToken.line + '.'); }
+        }
+        return {
+          id: 'scenario_' + this.scenarioCounter + '_S' + this.stepCounter++,
+          blockDescription: this.currentBlockDescription,
+          action: 'handoff',
+          payload: parseHandoff(commandToken.value, input, commandToken.line),
+          line: commandToken.line,
+        };
+      }
       const parts = commandToken.value.split(".");
       const alias = parts[0];
       const method = parts.slice(1).join(".");
@@ -418,6 +522,9 @@ export class Parser {
       rawAction = nextToken.value.toLowerCase();
     }
 
+    if (isOptional && /^(?:flow\.)?handoff\./i.test(rawAction)) {
+      throw new Error('Handoff commands are required scenario steps.');
+    }
     const actionBase = rawAction.startsWith("flow.")
       ? rawAction.replace("flow.", "")
       : rawAction;
