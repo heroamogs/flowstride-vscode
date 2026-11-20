@@ -2,7 +2,7 @@
   "name": "flowstride-vscode",
   "displayName": "Flowstride Automation",
   "description": "Official VS Code extension for Flowstride. Includes syntax highlighting, error diagnostics, IntelliSense, and interactive test runner.",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "publisher": "flowstride",
   "icon": "images/logo.png",
   "engines": {
@@ -90,15 +90,14 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node --test tests/*.test.cjs",
-    "test:unit": "npm run compile && node --test tests/formatter.test.cjs tests/extension.test.cjs",
+    "test:unit": "npm run compile && node --test tests/formatter.test.cjs tests/extension.test.cjs tests/workflow.test.cjs",
     "test:security": "npm run compile && node --test tests/security.test.cjs",
     "test:parity": "npm run compile && node --test tests/parity.test.cjs",
     "package": "npm exec --yes --package @vscode/vsce@4.0.0 -- vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/vscode": "^1.80.0",
-    "typescript": "^5.0.0"
+    "@types/vscode": "^1.80.0"
   },
   "capabilities": {
     "untrustedWorkspaces": {
@@ -115,5 +114,9 @@
   "bugs": {
     "url": "https://github.com/heroamogs/flowstride-vscode/issues"
   },
-  "homepage": "https://docs.flowstride.io/"
+  "homepage": "https://docs.flowstride.io/",
+  "dependencies": {
+    "typescript": "^5.0.0",
+    "zod": "4.6.7"
+  }
 }

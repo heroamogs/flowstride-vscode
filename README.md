@@ -1,6 +1,6 @@
 # Flowstride for VS Code
 
-Write, format and run `.flow` tests with the open-source engine or a Flowstride Cloud account.
+Write, format and run Flowstride (FS) tests in `.flow` files.
 
 ## Get started
 
@@ -11,10 +11,10 @@ Install and initialize Flowstride in your test project.
 ```sh
 npm i flowstride
 npx flowstride init
-npx flowstride install chromium
+npx flowstride run
 ```
 
-Open the project folder in VS Code and create a `.flow` file. Configure your application's `BASE_URL` in the project's `.env` and use your application's actual targets and expected results. Flowstride works locally without an account. Cloud offers free accounts and connects through `npx flowstride login`; feature availability depends on workspace access and usage allowances.
+Open the project folder in VS Code. The starter examples run against the bundled local practice app. For tests against your own application, set `BASE_URL` in the project's `.env`. Flowstride runs locally without an account. To connect a Flowstride Cloud workspace, use `npx flowstride login`. Cloud features depend on workspace access and plan limits. [Getting started](https://docs.flowstride.io/guide/getting-started)
 
 ## Formatting and diagnostics
 
@@ -43,6 +43,8 @@ Autocomplete, snippets, diagnostics and highlighting cover:
 | Downloads | `flow.download.arm`, `save`, `expect` |
 | Files and data | `flow.files.select`, `flow.data.load`, `cases`, `seed`, `flow.file.read`, property and network extraction |
 | Workflow control | `flow.call`, `flow.cleanup.register`, `flow.skipIf` and scenario tags |
+| Helpers and fixtures | Named JavaScript (JS) and TypeScript (TS) imports, `flow.call helper()`, `flow.fixture.use` and `flow.fixture.worker` |
+| Test dependencies | `flow.handoff.publish` and `flow.handoff.receive` |
 | Structured API | `flow.api.request`, `create`, `use`, `close`, `expectSchema`, `poll` |
 | Browser clocks | `flow.clock.install`, `pauseAt`, `resume`, `runFor`, `fastForward`, `setFixedTime`, `setSystemTime` |
 | Function doubles | `flow.stub.install`, `expect`, `restore` |
@@ -55,6 +57,32 @@ Autocomplete, snippets, diagnostics and highlighting cover:
 Existing API/UI commands, `flow.expect`, email OTP, iFrames, tables/cells, audio input, saved sessions, spatial targets and variables remain supported. Extracted variable names and explicitly global extractions appear in completion suggestions.
 
 Type `flow.` to choose a command group, then type its next dot to choose an action. The native snippets contain editable example values. Game action suggestions use an alias declared with `let game = "flowstride:game";`.
+
+Import JS or TS helpers under `Feature` and call them from a scenario. **Go to Definition** on a helper name in an import or call opens the statically named export in a trusted workspace. The extension reads the source without executing the helper. [JS and TS helpers](https://docs.flowstride.io/flow-language/getting-started/helpers)
+
+### Follow a helper from a flow
+
+In a project created with `npx flowstride init`, open `flows/examples/advanced/check-catalog-prices.flow`. The following scenario uses its bundled TypeScript helper:
+
+```flow
+Feature: Verify catalog prices
+import { checkCatalogPrices } from "practice/catalog.ts";
+
+Scenario: Every displayed price matches the catalog rules
+  Given "Read the catalog and open the page"
+    flow.get "/api/cars";
+    flow.expect status "200";
+    flow.extract resBody "cars" as "cars";
+    flow.open "/";
+  When "Check each displayed car"
+    flow.call checkCatalogPrices(page, "@cars") as "checkedCars";
+  Then "All 50 cars were checked"
+    flow.assert.value {"actual":"@checkedCars","operator":"equals","expected":50};
+```
+
+`@cars` passes the array extracted from the API response. Use **Go to Definition** on `checkCatalogPrices` to open its export in `helpers/practice/catalog.ts`. The helper returns the number of cars it checked, which the flow reads as `@checkedCars`.
+
+### Write a native assertion
 
 For example, in an application that has a Submit button:
 

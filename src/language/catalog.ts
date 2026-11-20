@@ -29,4 +29,9 @@ export const nativeMethods = new Set([
   ...Object.entries(nativeCommands).flatMap(([area, actions]) => actions.map(action => `${area}.${action}`)),
 ]);
 
+export const workflowCommands: Readonly<Record<string, readonly string[]>> = {
+  fixture: ['use', 'worker'],
+  handoff: ['publish', 'receive'],
+};
+
 export const gameCommands = ['tap', 'drag', 'swipe', 'key', 'checkpoint', 'snapshot', 'expectVisual', 'state', 'expectState', 'snapshotState', 'expectPreserved', 'fixture', 'select'];

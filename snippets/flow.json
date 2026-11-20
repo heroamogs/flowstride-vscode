@@ -848,5 +848,55 @@
       "Tags: ${1:smoke}, ${2:orders}"
     ],
     "description": "Set scenario tags immediately after the Scenario heading"
+  },
+  "Import a Flowstride helper": {
+    "prefix": "import",
+    "body": [
+      "import { ${1:generateEmail} } from \"${2:email.ts}\";"
+    ],
+    "description": "Import named JS or TS helpers under Feature, before Scenario"
+  },
+  "Call a JS or TS helper": {
+    "prefix": "flow.call",
+    "body": [
+      "flow.call ${1:generateEmail}() as \"${2:signupEmail}\";"
+    ],
+    "description": "Call a named helper and capture its JSON return value"
+  },
+  "Set up a scenario fixture": {
+    "prefix": "flow.fixture.use",
+    "body": [
+      "flow.fixture.use ${1:testAccount}() as \"${2:account}\";"
+    ],
+    "description": "Set up a fresh fixture in Given for the current scenario attempt"
+  },
+  "Set up a worker fixture": {
+    "prefix": "flow.fixture.worker",
+    "body": [
+      "flow.fixture.worker ${1:readOnlyService}() as \"${2:service}\";"
+    ],
+    "description": "Reuse a worker fixture and bind its result in Given"
+  },
+  "Publish a handoff": {
+    "prefix": "flow.handoff.publish",
+    "body": [
+      "flow.handoff.publish {",
+      "  \"name\": \"${1:accountReady}\",",
+      "  \"value\": { \"email\": \"@${2:account}.email\" },",
+      "  \"credentials\": { \"password\": \"@${2:account}.password\" }",
+      "};"
+    ],
+    "description": "Stage data and protected credentials for a dependent file"
+  },
+  "Receive a handoff": {
+    "prefix": "flow.handoff.receive",
+    "body": [
+      "flow.handoff.receive {",
+      "  \"name\": \"${1:accountReady}\",",
+      "  \"as\": \"${2:member}\",",
+      "  \"credentialsAs\": \"${3:login}\"",
+      "};"
+    ],
+    "description": "Wait for the producer and bind its values in Given"
   }
 }

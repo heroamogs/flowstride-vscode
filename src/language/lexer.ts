@@ -11,6 +11,8 @@ export enum TokenType {
   STRING = "STRING",
   NUMBER = "NUMBER",
   LET = "LET",
+  IMPORT = "IMPORT",
+  HELPER_CALL = "HELPER_CALL",
   ASSIGN = "ASSIGN",
   ALIAS_COMMAND = "ALIAS_COMMAND",
   JSON_PAYLOAD = "JSON_PAYLOAD",
@@ -22,6 +24,8 @@ export interface Token {
   type: TokenType;
   value: string;
   line: number;
+  helperArguments?: string;
+  fixtureScope?: 'attempt' | 'worker';
 }
 
 export class Lexer {
@@ -31,6 +35,28 @@ export class Lexer {
 
   constructor(rawInput: string) {
     this.input = rawInput.replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
+  }
+
+  private readHelperArguments(line: number, kind: string): string {
+    const start = this.position;
+    let inString = false;
+    let escaped = false;
+    while (this.position < this.input.length) {
+      const char = this.input[this.position++];
+      if (char === '\n') this.line++;
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (char === '\\') escaped = true;
+        else if (char === '"') inString = false;
+      } else if (char === '"') {
+        inString = true;
+      } else if (char === '(') {
+        throw new SyntaxError(`Line ${line}: ${kind} arguments must be JSON values. Nested calls are invalid.`);
+      } else if (char === ')') {
+        return this.input.slice(start, this.position - 1);
+      }
+    }
+    throw new SyntaxError(`Line ${line}: ${kind} call is missing its closing ')'.`);
   }
 
   public tokenise(): Token[] {
@@ -186,6 +212,11 @@ export class Lexer {
           continue;
         }
 
+        if (lowerIdent === 'import' && tokens.at(-1)?.type !== TokenType.LET) {
+          tokens.push({ type: TokenType.IMPORT, value: ident, line: this.line });
+          continue;
+        }
+
         if (lowerIdent === "let") {
           tokens.push({ type: TokenType.LET, value: ident, line: this.line });
           continue;
@@ -319,7 +350,7 @@ export class Lexer {
               line: this.line,
             });
             continue;
-          } else if (/^flow\.(browser|assert|network|download|clock|stub|trace|har|a11y|component|input|tab|frame|dialog|files|data|file|api|console|channel|visual)\.[a-z]+$/i.test(ident) || /^flow\.(call|skipIf|cleanup\.register)$/i.test(ident) || (ident.includes(".") && !lowerIdent.startsWith("flow."))) {
+          } else if (/^flow\.(browser|assert|network|download|clock|stub|trace|har|a11y|component|input|tab|frame|dialog|files|data|file|api|console|channel|visual|handoff)\.[a-z]+$/i.test(ident) || /^flow\.(call|skipIf|cleanup\.register)$/i.test(ident) || (ident.includes(".") && !lowerIdent.startsWith("flow."))) {
             tokens.push({
               type: TokenType.ALIAS_COMMAND,
               value: ident,
@@ -331,6 +362,25 @@ export class Lexer {
               `Syntax Error on line ${this.line}: Expected an action command after 'flow.try', but found "${ident}".`,
             );
           }
+        }
+
+        const fixtureScope = lowerIdent === 'flow.fixture.use' ? 'attempt'
+          : lowerIdent === 'flow.fixture.worker' ? 'worker' : undefined;
+        if (lowerIdent === 'flow.call' || fixtureScope) {
+          const header = /^[ \t]+([A-Za-z_$][\w$]*)[ \t]*\(/.exec(this.input.slice(this.position));
+          if (header) {
+            const line = this.line;
+            this.position += header[0].length;
+            tokens.push({
+              type: TokenType.HELPER_CALL,
+              value: header[1],
+              line,
+              helperArguments: this.readHelperArguments(line, fixtureScope ? 'Fixture' : 'Helper'),
+              ...(fixtureScope && { fixtureScope }),
+            });
+            continue;
+          }
+          if (fixtureScope) throw new SyntaxError('Line ' + this.line + ': Call a named fixture with parentheses, for example flow.fixture.use workspace().');
         }
 
         if (
@@ -523,7 +573,7 @@ export class Lexer {
             value: ident,
             line: this.line,
           });
-        } else if (/^flow\.(browser|assert|network|download|clock|stub|trace|har|a11y|component|input|tab|frame|dialog|files|data|file|api|console|channel|visual)\.[a-z]+$/i.test(ident) || /^flow\.(call|skipIf|cleanup\.register)$/i.test(ident) || (ident.includes(".") && !lowerIdent.startsWith("flow."))) {
+        } else if (/^flow\.(browser|assert|network|download|clock|stub|trace|har|a11y|component|input|tab|frame|dialog|files|data|file|api|console|channel|visual|handoff)\.[a-z]+$/i.test(ident) || /^flow\.(call|skipIf|cleanup\.register)$/i.test(ident) || (ident.includes(".") && !lowerIdent.startsWith("flow."))) {
           tokens.push({
             type: TokenType.ALIAS_COMMAND,
             value: ident,

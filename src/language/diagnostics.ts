@@ -36,13 +36,16 @@ function stepMessage(step: StepNode): string | undefined {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return `flow.${method ?? 'scroll'} requires a JSON object.`;
 }
 
-function diagnoseSteps(steps: StepNode[], fragment: boolean): FlowDiagnostic[] {
+function diagnoseSteps(steps: StepNode[], fragment: boolean, helpers = new Set<string>()): FlowDiagnostic[] {
   const result: FlowDiagnostic[] = [];
   const methods = steps.map(nativeMethod);
   const skipIndex = methods[0] === 'data.cases' ? 1 : 0;
   steps.forEach((step, index) => {
     const method = methods[index];
     let message = stepMessage(step);
+    if (!fragment && (step.action === 'helper' || step.action === 'fixture') && !helpers.has(step.payload.name)) {
+      message = 'Import "' + step.payload.name + '" under Feature before calling it.';
+    }
     if (!message && (method === 'data.cases' || method === 'skipIf')) {
       const inGiven = /^Given(?:\s|$)/.test(step.blockDescription);
       if (fragment) {
@@ -64,7 +67,10 @@ export function diagnoseFlow(text: string, fragment = false): FlowDiagnostic[] {
   try {
     const parser = new Parser(new Lexer(text).tokenise());
     if (fragment) return diagnoseSteps(parser.parseFragment(), true);
-    return parser.parse().flatMap(feature => feature.scenarios.flatMap(scenario => diagnoseSteps(scenario.steps, false)));
+    return parser.parse().flatMap(feature => {
+      const helpers = new Set(feature.declarations.filter(declaration => declaration.kind === 'helper').map(declaration => declaration.alias));
+      return feature.scenarios.flatMap(scenario => diagnoseSteps(scenario.steps, false, helpers));
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const match = message.match(/(?:on line|Line|line)\s+(\d+)/);

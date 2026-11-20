@@ -1,5 +1,5 @@
 const { test } = require('node:test'), assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path'), Module = require('node:module'), ts = require('typescript');
+const fs = require('node:fs'), path = require('node:path'), { createRequire } = require('node:module');
 const { Lexer } = require('../out/language/lexer'), { Parser } = require('../out/language/parser');
 const { formatFlowLines } = require('../out/language/formatter'), { diagnoseFlow } = require('../out/language/diagnostics');
 const { nativeMethods, gameCommands } = require('../out/language/catalog');
@@ -20,34 +20,22 @@ test('snippets cover every supported native command and produce complete, parsea
   }
 });
 function engineParser(root) {
-  const cache = new Map();
-  const allowed = new Set(['parser/lexer', 'parser/parser', 'parser/assertion_contract', 'native/workflow_tags', 'native/interactions']);
-  function load(name) {
-    assert(allowed.has(name), 'Only explicit parser dependencies may load: ' + name);
-    if (cache.has(name)) return cache.get(name).exports;
-    const filename = path.join(root, 'src', name + '.ts');
-    let source = fs.readFileSync(filename, 'utf8');
-    if (name === 'native/interactions') {
-      // Load the engine's pure key validator without browser or runtime dependencies.
-      const start = source.indexOf('const modifiers =');
-      const end = source.indexOf('export interface InteractionControl');
-      assert(start >= 0 && end > start, 'Could not find the engine keyboard contract');
-      source = source.slice(start, end);
-    }
-    const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-    const module = new Module(filename); cache.set(name, module);
-    module.require = request => load(path.posix.join(path.posix.dirname(name), request));
-    module._compile(output, filename); return module.exports;
-  }
+  const load = createRequire(path.resolve(root, 'package.json'));
+  const { Lexer } = load('./dist/parser/lexer');
+  const { Parser } = load('./dist/parser/parser');
   return (source, fragment = false) => {
-    const parser = new (load('parser/parser').Parser)(new (load('parser/lexer').Lexer)(source).tokenise());
+    const parser = new Parser(new Lexer(source).tokenise());
     return fragment ? parser.parseFragment() : parser.parse();
   };
 }
 function walk(folder) { return fs.existsSync(folder) ? fs.readdirSync(folder, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(path.join(folder, e.name)) : [path.join(folder,e.name)]) : []; }
-for (const [engine, root] of [['OS', process.env.FLOWSTRIDE_OS_ROOT], ['Cloud', process.env.FLOWSTRIDE_CLOUD_ROOT]]) {
+for (const [engine, root] of [['Flowstride', process.env.FLOWSTRIDE_OS_ROOT], ['Flowstride Pro', process.env.FLOWSTRIDE_CLOUD_ROOT]]) {
   test(`${engine}: formatter and diagnostics agree with the actual engine parser and shipped examples`, { skip: !root && 'Set the engine source path for integration parity' }, () => {
     const engineParse = engineParser(root);
+    for (const [file, folder] of [['workflow_contract.ts', 'parser'], ['helperPath.ts', 'utils'], ['projectPath.ts', 'utils']]) {
+      assert.equal(fs.readFileSync(path.join(__dirname, '../src/language/shared', file), 'utf8'),
+        fs.readFileSync(path.join(root, 'src', folder, file), 'utf8'), file + ' must stay in sync with the engine');
+    }
     const check = (source, label, fragment = false) => {
       const formatted = formatFlowLines(source, { fragment }).join(source.includes('\r\n') ? '\r\n' : '\n');
       const parser = new Parser(new Lexer(formatted).tokenise());
@@ -59,7 +47,7 @@ for (const [engine, root] of [['OS', process.env.FLOWSTRIDE_OS_ROOT], ['Cloud', 
       check(source, command);
     }
     for (const snippet of commandSnippets) check(wrap(snippetBody(snippet)), snippet.prefix);
-    const files = [...walk(path.join(root,'examples/native-workflows')), ...walk(path.join(root,'examples/native-game'))].filter(f => f.endsWith('.flow'));
+    const files = [...walk(path.join(root,'examples/native-workflows')), ...walk(path.join(root,'examples/native-game')), ...walk(path.join(root,'examples/practice-app'))].filter(f => f.endsWith('.flow'));
     assert(files.length > 0, 'Engine examples must be present');
     for (const file of files) check(fs.readFileSync(file, 'utf8'), file);
     const lab = process.env.FLOWSTRIDE_LAB_TESTS_ROOT;
@@ -73,7 +61,7 @@ for (const [engine, root] of [['OS', process.env.FLOWSTRIDE_OS_ROOT], ['Cloud', 
     }
     const and = wrap('flow.assert.that {"target":"Ready","condition":"visible"};').replace('When "Exercise native command"','When "Prepare"\n flow.open "/";\nAnd "Check"');
     check(and, 'intermediate And');
-    if (engine === 'Cloud') check(wrap('flow.switchTo previous;'), 'Cloud unquoted previous shortcut');
+    if (engine === 'Flowstride Pro') check(wrap('flow.switchTo previous;'), 'Cloud unquoted previous shortcut');
     const terminal = wrap('flow.open "/";') + 'And "Too late"\nflow.expect visible "Ready";';
     assert.throws(() => engineParse(terminal), /Terminal Lock/);
     assert.match(diagnoseFlow(terminal)[0].message, /Terminal Lock/);

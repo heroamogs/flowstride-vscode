@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0
+
+- Import JavaScript and TypeScript helpers in a Flowstride feature. Complete helper names and use Go to Definition from an import, a helper call or a fixture call.
+- Write attempt and worker fixtures and pass data between dependent flows with handoffs. The editor checks their syntax and placement and includes snippets for each command.
+- Format and validate the 2.0 practice flows, including the catalog price checks and the admin-to-user handoff.
+
 ## 1.0.6
 
 - Support the new browser, API, data and evidence commands in formatting, diagnostics, completions, snippets and highlighting.

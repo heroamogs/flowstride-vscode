@@ -7,7 +7,6 @@ vsc-extension-quickstart.md
 **/tsconfig.json
 **/.eslintrc.json
 **/*.vsix
-node_modules/**
 ../node_modules/**
 ../../node_modules/**
 tests/**
@@ -17,3 +16,12 @@ scripts/**
 package-lock.json
 
 .engine-os/**
+
+# The helper definition provider uses the TypeScript parser at runtime.
+node_modules/typescript/bin/**
+node_modules/typescript/lib/**
+!node_modules/typescript/lib/typescript.js
+node_modules/zod/src/**
+node_modules/zod/v3/**
+node_modules/zod/**/*.d.ts
+node_modules/zod/**/*.d.cts
